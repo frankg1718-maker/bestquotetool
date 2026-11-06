@@ -1,0 +1,1333 @@
+<title>Painting Estimator</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: a working estimate on the left (one block per surface), a sticky cost summary on the right.
+   Palette: shop-floor paper, ink, masking-tape yellow used only for the start button and the total. */
+:root{
+  --display:'Bricolage Grotesque','Avenir Next','Segoe UI',system-ui,sans-serif;
+  --body:'IBM Plex Sans','Segoe UI',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+  --bg:#F1F2EE; --surface:#FFFFFF; --surface2:#E8EBE5; --ink:#16262B; --muted:#57686D; --line:#D3D9D0;
+  --accent:#1B6785; --on-accent:#FFFFFF; --tape:#F0BE2B; --on-tape:#241D05; --danger:#B03636;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B1114; --surface:#151F25; --surface2:#1C2A31; --ink:#E9F1EF; --muted:#93A7AC; --line:#2B3B41;
+    --accent:#7FD4FF; --on-accent:#05202A; --danger:#EE8A8A; color-scheme:dark;
+  }
+  :root:not([data-theme="light"]) body{
+    background:
+      radial-gradient(1000px 480px at 85% -6%, rgba(127,212,255,.10), transparent 60%),
+      radial-gradient(760px 420px at 6% 2%, rgba(240,190,43,.05), transparent 60%),
+      var(--bg);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0B1114; --surface:#151F25; --surface2:#1C2A31; --ink:#E9F1EF; --muted:#93A7AC; --line:#2B3B41;
+  --accent:#7FD4FF; --on-accent:#05202A; --danger:#EE8A8A; color-scheme:dark;
+}
+:root[data-theme="dark"] body{
+  background:
+    radial-gradient(1000px 480px at 85% -6%, rgba(127,212,255,.10), transparent 60%),
+    radial-gradient(760px 420px at 6% 2%, rgba(240,190,43,.05), transparent 60%),
+    var(--bg);
+}
+*,*::before,*::after{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 var(--body)}
+h1,h2,h3,h4{margin:0;font-family:var(--display);font-weight:700;letter-spacing:-.01em;text-wrap:balance}
+h2{font-size:19px}
+h3{font-size:12px;font-family:var(--body);font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:20px 0 8px;display:flex;align-items:center;gap:8px}
+h3::before{content:'';width:4px;height:14px;border-radius:2px;background:var(--tape);flex:none}
+h4{font-size:12px;font-family:var(--body);font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:0 0 8px}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+p{margin:0}
+
+/* shared gutter */
+.wrap{max-width:1120px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:18px 56px}
+
+/* header */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb, var(--bg) 86%, transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.top-in{max-width:1120px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px))}
+.brand{display:flex;align-items:center;gap:10px;background:none;border:0;color:var(--ink);padding:0;min-width:0;text-align:left}
+.bn{font-family:var(--display);font-weight:700;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.logo{width:36px;height:36px;display:grid;place-items:center;flex:none;color:var(--ink)}
+.logo svg,.logo img{width:100%;height:100%;object-fit:contain}
+.logo.big{width:96px;height:96px}
+.tot{text-align:right;flex:none}
+.tot span{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.tot b{font-family:var(--mono);font-size:24px;font-weight:600;letter-spacing:-.01em;background:linear-gradient(transparent 60%,var(--tape) 60%,var(--tape) 94%,transparent 94%);padding:0 4px}
+.langseg{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;flex:none}
+.langseg button{background:transparent;border:0;color:var(--muted);padding:7px 13px;font-weight:700;font-size:13px;letter-spacing:.04em}
+.langseg button.on{background:var(--accent);color:var(--on-accent)}
+
+/* landing */
+.land{max-width:960px;margin:0 auto;padding-block:40px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:28px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:820px){.land{grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);align-items:start;gap:48px;padding-top:72px}}
+.land h1{font-size:clamp(32px,6vw,48px);line-height:1.05;margin:18px 0 12px;overflow-wrap:anywhere}
+.lead{color:var(--muted);max-width:44ch;margin-bottom:24px;font-size:16px}
+.start{background:linear-gradient(135deg,var(--tape),color-mix(in srgb, var(--tape) 78%, #7a5b00));color:var(--on-tape);border:0;border-radius:10px;padding:15px 32px;font-family:var(--display);font-weight:700;font-size:18px;box-shadow:0 8px 22px rgba(240,190,43,.28),0 3px 0 rgba(0,0,0,.28);transition:transform .12s,box-shadow .15s}
+.start:hover{transform:translateY(-1px)}
+.start:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.28)}
+
+/* layout */
+.layout{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+@media (min-width:960px){
+  .layout{grid-template-columns:minmax(0,1fr) 320px;align-items:start}
+  .summary{position:sticky;top:calc(env(safe-area-inset-top,0px) + 76px)}
+}
+#body{display:flex;flex-direction:column;gap:14px;min-width:0}
+
+/* blocks */
+.blk,.sbox{background:linear-gradient(180deg,color-mix(in srgb, var(--surface) 96%, #fff),var(--surface));border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 10px 28px rgba(0,0,0,.22)}
+.blk.off .bb{opacity:.45}
+.bh{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.bh:last-child{margin-bottom:0}
+.sum{font-family:var(--mono);font-weight:500}
+.bb{min-width:0}
+.item{border-top:1px solid var(--line);padding-top:14px;margin-top:14px}
+.item:first-of-type{margin-top:0}
+.ih{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.ih small{color:var(--muted);font-weight:400}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;align-items:end;margin-bottom:10px;min-width:0}
+.row>*{min-width:0}
+.f{display:block;min-width:0}
+.f>span{display:block;font-size:12px;color:var(--muted);margin-bottom:3px}
+.in{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;font-size:16px;min-width:0;transition:border-color .15s,box-shadow .15s}
+.in:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 28%, transparent);outline:none}
+.in.n,input[type=number].in{font-family:var(--mono);text-align:right}
+select.in{padding-right:4px}
+textarea.in{resize:vertical;min-height:84px;line-height:1.4}
+.amt{display:block;font-family:var(--mono);font-weight:500;padding:8px 0}
+.hint{font-size:13px;color:var(--muted);margin:2px 0 10px}
+.chk{display:flex;align-items:center;gap:8px;margin-bottom:10px;min-width:0}
+.chk input{width:18px;height:18px;accent-color:var(--accent);flex:none;margin:0}
+.chk.ttl span{font-family:var(--display);font-weight:700;font-size:19px}
+.bh .chk{margin-bottom:0}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:10px 16px;border-radius:10px;font-weight:600;transition:transform .12s,box-shadow .15s,filter .15s}
+.btn:hover{filter:brightness(1.07)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:linear-gradient(135deg,var(--accent),color-mix(in srgb, var(--accent) 72%, #0a4a63));color:var(--on-accent);border-color:transparent;box-shadow:0 6px 18px color-mix(in srgb, var(--accent) 35%, transparent)}
+.btn.small{padding:6px 10px;font-size:13px}
+.btn.wide{width:100%}
+.rm{border:1px solid var(--line);background:transparent;color:var(--muted);width:32px;height:32px;border-radius:8px;font-size:18px;line-height:1;flex:none}
+.rm:hover{color:var(--danger);border-color:var(--danger)}
+
+/* extras */
+.extras{margin-top:6px;padding-top:12px;border-top:1px dashed var(--line)}
+.xrow{background:var(--surface2);border-radius:8px;padding:10px;margin-bottom:10px}
+.xhead{display:flex;gap:8px;margin-bottom:8px}
+.xhead .in{font-weight:600}
+.addx{max-width:340px}
+
+/* room calc */
+.calc{margin:6px 0 0;padding:12px;border-radius:8px;background:var(--surface2);display:grid;gap:4px}
+.calc div{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.calc dt{color:var(--muted)}
+.calc dd{margin:0;font-family:var(--mono);text-align:right}
+.calc .net{border-top:1px solid var(--line);padding-top:6px;margin-top:2px;font-weight:600}
+.calc .net dt{color:var(--ink)}
+
+/* coating choice */
+.coats{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.coat{display:block;border:1px solid var(--line);border-radius:10px;padding:12px 14px;cursor:pointer;position:relative;transition:border-color .15s,box-shadow .2s,transform .12s;background:var(--surface)}
+.coat:hover{transform:translateY(-1px)}
+.coat input{position:absolute;opacity:0;pointer-events:none}
+.coat:has(input:checked){border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent),0 0 20px color-mix(in srgb, var(--accent) 32%, transparent)}
+.coat:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+.ct{display:block;font-weight:600}
+.cd{display:block;font-size:12.5px;color:var(--muted);font-family:var(--mono);margin-top:2px}
+
+/* summary */
+.sbox h2{margin-bottom:10px}
+.sl{margin:0;display:grid;gap:6px}
+.sl div{display:flex;justify-content:space-between;gap:12px}
+.sl dt{color:var(--muted)}
+.sl dd{margin:0;font-family:var(--mono)}
+.stotal{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:14px 0 8px;padding-top:12px;border-top:2px solid var(--ink)}
+.stotal span{font-weight:600}
+.stotal b{font-family:var(--mono);font-size:24px;font-weight:500;background:linear-gradient(transparent 62%,var(--tape) 62%,var(--tape) 92%,transparent 92%);padding:0 2px}
+.sbox .btn{margin-top:10px}
+
+/* quote document */
+#quote{margin-top:28px}
+.qtools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;max-width:820px;margin:0 auto 12px}
+.qtools .hint{margin:0}
+#qtext{display:block;width:100%;max-width:820px;margin:0 auto 12px;min-height:200px;font-family:var(--mono);font-size:13px}
+.qdoc{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:clamp(16px,4vw,36px);max-width:820px;margin:0 auto}
+.qh{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;border-bottom:2px solid var(--ink);padding-bottom:14px}
+.qco{display:flex;gap:12px;align-items:center;min-width:0}
+.qco h2{font-size:22px;overflow-wrap:anywhere}
+.qco p,.qno p{font-size:13px;color:var(--muted)}
+.qno{text-align:right}
+.qno b{font-family:var(--mono);font-weight:500}
+.qmeta{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:6px 20px;margin:14px 0 4px;font-size:14px}
+.qmeta span{color:var(--muted)}
+.qgrp{margin-top:20px}
+.qgh{display:flex;justify-content:space-between;gap:12px;font-family:var(--display);font-weight:700;border-bottom:1px solid var(--ink);padding-bottom:4px}
+.qgh b{font-family:var(--mono);font-weight:500}
+.ql{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1px 14px;padding:8px 0;border-bottom:1px dotted var(--line)}
+.ql .a{font-family:var(--mono);text-align:right}
+.ql .s{grid-column:1;color:var(--muted);font-size:13px}
+.ql .why{grid-column:1;font-size:13px;font-style:italic}
+.ql.x .d::before{content:'+ ';color:var(--accent);font-weight:700}
+.qtotal{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-top:20px;padding:14px 0;border-top:2px solid var(--ink);border-bottom:2px solid var(--ink)}
+.qtotal span{font-family:var(--display);font-weight:700;font-size:20px}
+.qtotal b{font-family:var(--mono);font-weight:500;font-size:26px}
+.qterms{margin-top:14px;font-size:13px;color:var(--muted);white-space:pre-wrap}
+.qdep{display:flex;justify-content:space-between;gap:12px;margin-top:12px;font-size:15px}
+.qsign{margin-top:30px;font-size:14px}
+.qsign p{margin:0 0 12px}
+.qsign .line{border-bottom:1px solid var(--ink);display:inline-block;min-width:260px}
+</style>
+
+<div id="landing" class="land">
+  <div>
+    <div class="logo big" data-logo></div>
+    <h1 data-out="company.name"></h1>
+    <p class="lead" data-i18n="app.lead">Price a room surface by surface. Rates follow the job's ZIP code, every number can be changed, and extra repairs are explained on the quote.</p>
+    <button class="start" type="button" data-act="start" data-i18n="app.start">Start estimate</button>
+  </div>
+  <section class="blk">
+    <div class="bh"><h2 data-i18n="app.company">Your company</h2></div>
+    <label class="f" style="margin-bottom:10px"><span data-i18n="app.cname">Company name</span><input class="in" type="text" data-k="company.name" autocomplete="organization"></label>
+    <div class="row">
+      <label class="f"><span data-i18n="app.phone">Phone</span><input class="in" type="text" data-k="company.phone" autocomplete="tel"></label>
+      <label class="f"><span data-i18n="app.email">Email</span><input class="in" type="text" data-k="company.email" autocomplete="email"></label>
+    </div>
+    <label class="f" style="margin-bottom:10px"><span data-i18n="app.license">License number</span><input class="in" type="text" data-k="company.license"></label>
+    <div class="f"><span data-i18n="app.logo">Logo</span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <input id="logoFile" class="in" type="file" accept="image/*" style="max-width:260px">
+        <button class="btn small" type="button" data-act="rmLogo" data-i18n="app.rmlogo">Remove logo</button>
+      </div>
+    </div>
+    <p class="hint" style="margin-top:10px" data-i18n="app.remember">These details appear on every quote and are remembered in this browser.</p>
+  </section>
+</div>
+
+<div id="app" hidden>
+  <header class="top"><div class="top-in">
+    <button class="brand" type="button" data-act="home" data-i18n-aria="a.home" aria-label="Company details"><span class="logo" data-logo></span><span class="bn" data-out="company.name"></span></button>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="langseg" role="group" aria-label="Language / Idioma"><button type="button" data-lang="en">EN</button><button type="button" data-lang="es">ES</button></div>
+      <div class="tot"><span data-i18n="hdr.estimate">Estimate</span><b data-out="total"></b></div>
+    </div>
+  </div></header>
+  <div class="wrap">
+    <div class="layout">
+      <main id="body"></main>
+      <aside class="summary"><div class="sbox">
+        <h2 data-i18n="sum.title">Cost summary</h2>
+        <p class="hint" data-out="sum.room"></p>
+        <dl class="sl">
+          <div><dt data-i18n="sum.walls">Walls</dt><dd data-out="sum.walls"></dd></div>
+          <div><dt data-i18n="sum.ceiling">Ceiling</dt><dd data-out="sum.ceiling"></dd></div>
+          <div><dt data-i18n="sum.doors">Doors</dt><dd data-out="sum.doors"></dd></div>
+          <div><dt data-i18n="sum.windows">Windows</dt><dd data-out="sum.windows"></dd></div>
+          <div><dt data-i18n="sum.trim">Trim and molding</dt><dd data-out="sum.trim"></dd></div>
+          <div><dt data-i18n="sum.others">Other items</dt><dd data-out="sum.others"></dd></div>
+          <div><dt data-i18n="sum.materials">Materials</dt><dd data-out="sum.materials"></dd></div>
+        </dl>
+        <div class="stotal"><span data-i18n="sum.total">Total estimate</span><b data-out="total"></b></div>
+        <p class="hint" data-out="sum.extras"></p>
+        <button class="btn primary wide" type="button" data-act="quote" data-i18n="act.quote">Generate quote</button>
+        <button class="btn primary wide" type="button" data-act="invoice" data-i18n="act.invoice">Generate invoice</button>
+      </div></aside>
+    </div>
+    <section id="quote" hidden>
+      <div class="qtools">
+        <button class="btn primary" type="button" data-act="copyQuote" id="copyBtn" data-i18n="q.copy">Copy quote text</button>
+        <button class="btn" type="button" data-act="downloadQuote" data-i18n="q.word">Download Word</button>
+        <span class="hint" data-i18n="q.hint">Paste it into an email or message, or download the Word file and open it in Google Docs to edit. The quote updates as you change the estimate.</span>
+      </div>
+      <textarea id="qtext" class="in" readonly hidden></textarea>
+      <div id="qdoc"></div>
+    </section>
+    <section id="invoice" hidden>
+      <div class="qtools">
+        <button class="btn primary" type="button" data-act="copyInvoice" id="copyInvBtn" data-i18n="i.copy">Copy invoice text</button>
+        <button class="btn" type="button" data-act="downloadInvoice" data-i18n="i.word">Download Word</button>
+        <span class="hint" data-i18n="i.hint">Milestones split the total into payments. The invoice updates as you change the estimate.</span>
+      </div>
+      <div class="blk" style="max-width:820px;margin:0 auto 12px">
+        <div class="bh"><h2 data-i18n="ms.title">Payment milestones</h2><button class="btn small" type="button" data-act="addMilestone" data-i18n="ms.add">+ Add milestone</button></div>
+        <div class="bb"><div id="msList"></div>
+        <p class="hint" data-out="ms.covered"></p>
+        <p class="hint" data-out="ms.warn" style="color:var(--danger)"></p></div>
+      </div>
+      <textarea id="invtext" class="in" readonly hidden></textarea>
+      <div id="invdoc"></div>
+    </section>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const NF={
+  en:new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}),
+  es:new Intl.NumberFormat('es-US',{style:'currency',currency:'USD'})
+};
+const money=x=>(NF[S.lang]||NF.en).format(x||0);
+const LOC=()=>S.lang==='es'?'es-US':'en-US';
+const r2=x=>Math.round((x+Number.EPSILON)*100)/100;
+const n=x=>String(Math.round((+x||0)*100)/100);
+
+/* ---------- languages ---------- */
+const STR={
+en:{
+'app.title':'Painting Estimator','app.lead':"Price a room surface by surface. Rates follow the job's ZIP code, every number can be changed, and extra repairs are explained on the quote.",'app.start':'Start estimate','app.company':'Your company','app.cname':'Company name','app.phone':'Phone','app.email':'Email','app.license':'License number','app.logo':'Logo','app.rmlogo':'Remove logo','app.remember':'These details appear on every quote and are remembered in this browser.',
+'hdr.estimate':'Estimate',
+'sum.title':'Cost summary','sum.walls':'Walls','sum.ceiling':'Ceiling','sum.doors':'Doors','sum.windows':'Windows','sum.trim':'Trim and molding','sum.others':'Other items','sum.materials':'Materials','sum.total':'Total estimate',
+'act.quote':'Generate quote','act.invoice':'Generate invoice',
+'q.copy':'Copy quote text','q.copied':'Copied','q.copyfb':'Select and copy the text below','q.word':'Download Word','q.hint':'Paste it into an email or message, or download the Word file and open it in Google Docs to edit. The quote updates as you change the estimate.',
+'i.copy':'Copy invoice text','i.copied':'Copied','i.copyfb':'Select and copy the text below','i.word':'Download Word','i.hint':'Milestones split the total into payments. The invoice updates as you change the estimate.',
+'ms.title':'Payment milestones','ms.add':'+ Add milestone','ms.empty':'No milestones. Add one to split the payments.','ms.name':'Milestone','ms.type':'Type','ms.value':'Value','ms.due':'Due','ms.amount':'Amount','ms.pct':'% of total','ms.flat':'$ amount','ms.dueph':'e.g. Due on signing','ms.rm':'Remove milestone','ms.new':'New milestone',
+'setup.title':'Job setup','setup.zip':'ZIP code of the job','setup.labor':'Labor rate $ per hour','setup.reset':'Reset my price edits','setup.sughint':'Suggested rates are your standard rates below times the ZIP code multiplier. Type your own price in any rate field on the estimate to override it for that job only; clear the field to go back to the suggested rate.','setup.base':'My standard rates','setup.basehint':'Your base rates at 1.00×. Change them once and every ZIP code suggestion follows.',
+'base.wallsfull':'Walls $ per sq ft (full primer)','base.wallsspot':'Walls $ per sq ft (spot primer)','base.ceilfull':'Ceiling $ per sq ft (full)','base.ceilspot':'Ceiling $ per sq ft (spot)','base.trimfull':'Trim $ per ln ft (full)','base.trimspot':'Trim $ per ln ft (spot)','base.door':'Door $ per side','base.window':'Window $ each',
+'setup.system':'Paint system','coat.full':'Full primer + 2 coats of paint','coat.spot':'Spot primer + 2 coats of paint','coat.walls':'walls','coat.ceiling':'ceiling','coat.trim':'trim','coat.persqft':'/sq ft','coat.perlnft':'/ln ft',
+'setup.roomsize':'Room size','room.l':'Length ft','room.w':'Width ft','room.h':'Wall height ft',
+'calc.perim':'Room perimeter','calc.gross':'Wall area before openings','calc.doors':'Doors taken out','calc.wins':'Windows taken out','calc.net':'Paintable wall area','calc.ceil':'Ceiling area',
+'unit.ft':'ft','unit.sqft':'sq ft','unit.lnft':'ln ft','unit.hr':'hr','unit.flat':'flat','unit.each':'each','unit.hour':'hour','unit.gallon':'gallon','unit.quart':'quart','unit.roll':'roll','unit.tube':'tube','unit.pack':'pack','unit.box':'box','unit.sheet':'sheet',
+'sec.walls':'Walls','sec.ceiling':'Ceiling','fld.area':'Paintable area (sq ft)','fld.rate':'Rate $ per sq ft','fld.wcost':'Walls cost','fld.ccost':'Ceiling cost',
+'x.title':'Extra cost','x.qty':'Quantity','x.rate':'Rate','x.amount':'Amount $','x.cost':'Cost','x.why':'Why this extra is needed (shown on the quote)','x.add':'+ Add extra cost (skim coat, repairs…)','x.rm':'Remove extra cost',
+'preset.skim':'Skim coat','preset.skim.ph':'e.g. heavy texture or uneven plaster has to be smoothed first','preset.patch':'Patch and crack repair','preset.patch.ph':'e.g. cracks, dents and nail holes to fill and sand','preset.stain':'Water stain seal','preset.stain.ph':'e.g. old leak marks need a stain-blocking primer','preset.texture':'Texture removal','preset.texture.ph':'e.g. popcorn or orange-peel texture to scrape off','preset.wallpaper':'Wallpaper removal','preset.wallpaper.ph':'e.g. two layers of paper and glue to wash off','preset.caulk':'Caulk and wood filler','preset.caulk.ph':'e.g. open gaps along the trim joints','preset.custom':'Other extra cost','preset.custom.ph':'Say what the work is and why it is needed',
+'xw.needs':'Needs more work than usual','xw.hours':'Extra hours','xw.why':'Why (shown on the quote)','xw.whyph':'e.g. peeling paint to scrape and sand','xw.cost':'Extra cost',
+'sec.doors':'Doors','sec.windows':'Windows','dw.adddoor':'+ Add door','dw.addwin':'+ Add window','dw.nodoors':'No doors in this room.','dw.nowins':'No windows in this room.','dw.door':'Door','dw.win':'Window','dw.rmdoor':'Remove door','dw.rmwin':'Remove window','dw.type':'Type','dw.width':'Width ft','dw.height':'Height ft','dw.opening':'Opening taken off the walls','dw.paintdoor':'Paint this door','dw.paintwin':'Paint this window (frame and sash)','dw.sides':'Sides painted','dw.side1':'1 side','dw.side2':'2 sides','dw.rate':'Rate $ per side','dw.ratewin':'Rate $ per window','dw.cost':'Door cost','dw.wincost':'Window cost',
+'size.door.0':'Standard interior','size.door.1':'Exterior / entry','size.door.2':'Closet bi-fold','size.door.3':'Double door','size.door.4':'French door','size.door.5':'Custom','size.win.0':'Small','size.win.1':'Standard','size.win.2':'Large','size.win.3':'Picture window','size.win.4':'Bay window','size.win.5':'Custom',
+'sec.trim':'Trim and molding','trim.crown':'Crown molding','trim.crown.d':'where the walls meet the ceiling','trim.casing':'Door and window trim','trim.casing.d':'casing around the openings','trim.base':'Baseboard','trim.base.d':'along the floor','trim.len':'Length (ln ft)','trim.rate':'Rate $ per ln ft','trim.cost':'Cost',
+'sec.mats':'Materials','mat.auto':'Auto-fill from job','mat.add':'+ Add material','mat.hint':'Example prices. Replace them with what your supplier charges. The quote shows only the materials total, never these line items.','mat.name':'Material','mat.qty':'Quantity','mat.unit':'Unit','mat.cpu':'Cost per unit $','mat.total':'Total','mat.rm':'Remove material',
+'sec.others':'Other items','oth.add':'+ Add item','oth.empty':'Nothing added. Use this for cabinets, railings, radiators, garage doors or anything else you price yourself.','oth.include':'Include in estimate','oth.name':'Item name','oth.qty':'Quantity','oth.unit':'Unit','oth.cpu':'Cost per unit $','oth.rm':'Remove item',
+'sec.qd':'Quote details','qd.cname':'Customer name','qd.addr':'Property address','qd.terms':'Terms shown on the quote',
+'doc.quote':'Quote','doc.valid':'Valid until','doc.prep':'Prepared for','doc.prop':'Property','doc.room':'Room size','doc.paint':'Paint system','doc.customer':'Customer','doc.noaddr':'Not entered','doc.total':'Total','doc.deposit':'Deposit to start the project','doc.balance':'Balance due on completion','doc.accept':'Client acceptance — I agree to the work and price above.','doc.sign':'Signature','doc.pname':'Print name','doc.date':'Date','doc.why':'Why: ','doc.empty':'Nothing is switched on yet.',
+'doc.g.walls':'Walls','doc.g.ceiling':'Ceiling','doc.g.doors':'Doors','doc.g.windows':'Windows','doc.g.trim':'Trim and molding','doc.trimmin':'Trim package minimum (small room)','doc.g.others':'Other items','doc.g.mats':'Materials',
+'doc.matsline':'Paint, primer and supplies for this job','doc.door':'Door','doc.win':'Window','doc.xw':'extra work','doc.side':'side','doc.sides':'sides',
+'doc.inv':'Invoice','doc.billto':'Bill to','doc.ms':'Payment milestones','doc.mstone':'Milestone','doc.nomsset':'No milestones set.','doc.mspct':'% of total','doc.msflat':'flat','doc.roomw':'room','doc.wallh':'wall height','doc.floor':'floor',
+'u.typnum':'Type a number to change it; clear the field to go back.','u.edited':'Edited by you. The calculated value is','u.useit':'Clear the field to use it.',
+'u.zipenter':'Enter a 5-digit ZIP code. Standard rates are used until then.','u.zipnone':'No local data for this ZIP, so standard rates are used','u.ziplocal':'Local rates are','u.ziptimes':'times the standard rates.',
+'u.wallsh':'Calculated from the room:','u.wallsof':'sq ft of wall less','u.wallsdw':'sq ft of doors and windows','u.ceilh':'Calculated from the room:','u.trimperim':'Room perimeter','u.trimcasing':'Door casing (2 × height + width) plus all four sides of each window','u.trimbase':'Room perimeter less the door widths','u.trimcalc':'Calculated:','u.sumroom':'Room','u.sumof':'sq ft of walls','u.sumextras':'Includes','u.sumextras2':'of extra repairs and added work.','u.noextras':'No extra repairs added.','u.door1':'door','u.doors':'doors','u.win1':'window','u.wins':'windows','u.trimmin':'Trim package minimum applied (small-room trim minimum $400)',
+'u.mswarnover':'Percentages add to','u.mswarnunder':'of the total is not assigned to any milestone.','u.msfixed':'Fix the milestones.','u.mscovered':'Milestones cover','u.msof':'of',
+'a.home':'Company details','zip.manhattan':'Manhattan','zip.staten':'Staten Island','zip.bronx':'Bronx','zip.westchester':'Westchester and Hudson Valley','zip.nassau':'Nassau County','zip.queens':'Queens','zip.brooklyn':'Brooklyn','zip.longisland':'Long Island','zip.newjersey':'New Jersey','zip.connecticut':'Connecticut'
+},
+es:{
+'app.title':'Cotizador de pintura','app.lead':'Cotice un cuarto superficie por superficie. Las tarifas siguen el código postal del trabajo, cada número se puede cambiar y las reparaciones adicionales se explican en la cotización.','app.start':'Comenzar cotización','app.company':'Su empresa','app.cname':'Nombre de la empresa','app.phone':'Teléfono','app.email':'Correo electrónico','app.license':'Número de licencia','app.logo':'Logotipo','app.rmlogo':'Quitar logotipo','app.remember':'Estos datos aparecen en cada cotización y se guardan en este navegador.',
+'hdr.estimate':'Estimado',
+'sum.title':'Resumen de costos','sum.walls':'Paredes','sum.ceiling':'Techo','sum.doors':'Puertas','sum.windows':'Ventanas','sum.trim':'Molduras','sum.others':'Otros','sum.materials':'Materiales','sum.total':'Estimado total',
+'act.quote':'Generar cotización','act.invoice':'Generar factura',
+'q.copy':'Copiar texto','q.copied':'Copiado','q.copyfb':'Seleccione y copie el texto de abajo','q.word':'Descargar Word','q.hint':'Péguelo en un correo o mensaje, o descargue el archivo Word y ábralo en Google Docs para editarlo. La cotización se actualiza al cambiar el estimado.',
+'i.copy':'Copiar texto de factura','i.copied':'Copiado','i.copyfb':'Seleccione y copie el texto de abajo','i.word':'Descargar Word','i.hint':'Los hitos dividen el total en pagos. La factura se actualiza al cambiar el estimado.',
+'ms.title':'Hitos de pago','ms.add':'+ Agregar hito','ms.empty':'No hay hitos. Agregue uno para dividir los pagos.','ms.name':'Hito','ms.type':'Tipo','ms.value':'Valor','ms.due':'Vence','ms.amount':'Monto','ms.pct':'% del total','ms.flat':'$ monto fijo','ms.dueph':'ej. Al firmar','ms.rm':'Eliminar hito','ms.new':'Nuevo hito',
+'setup.title':'Datos del trabajo','setup.zip':'Código postal del trabajo','setup.labor':'Tarifa de mano de obra $ por hora','setup.reset':'Restablecer mis precios','setup.sughint':'Las tarifas sugeridas son sus tarifas base por el multiplicador del código postal. Escriba su propio precio en cualquier tarifa para cambiarlo solo en este trabajo; borre el campo para volver a la tarifa sugerida.','setup.base':'Mis tarifas base','setup.basehint':'Sus tarifas base a 1.00×. Cámbielas una vez y cada sugerencia por código postal las sigue.',
+'base.wallsfull':'Paredes $ por pie cuad. (imprimante completo)','base.wallsspot':'Paredes $ por pie cuad. (imprimante parcial)','base.ceilfull':'Techo $ por pie cuad. (completo)','base.ceilspot':'Techo $ por pie cuad. (parcial)','base.trimfull':'Molduras $ por pie lin. (completo)','base.trimspot':'Molduras $ por pie lin. (parcial)','base.door':'Puerta $ por lado','base.window':'Ventana $ c/u',
+'setup.system':'Sistema de pintura','coat.full':'Imprimante completo + 2 manos de pintura','coat.spot':'Imprimante parcial + 2 manos de pintura','coat.walls':'paredes','coat.ceiling':'techo','coat.trim':'molduras','coat.persqft':'/pie cuad.','coat.perlnft':'/pie lin.',
+'setup.roomsize':'Tamaño del cuarto','room.l':'Largo (pies)','room.w':'Ancho (pies)','room.h':'Altura (pies)',
+'calc.perim':'Perímetro del cuarto','calc.gross':'Área de pared sin aberturas','calc.doors':'Puertas descontadas','calc.wins':'Ventanas descontadas','calc.net':'Área de pared a pintar','calc.ceil':'Área del techo',
+'unit.ft':'pies','unit.sqft':'pies cuad.','unit.lnft':'pies lin.','unit.hr':'h','unit.flat':'fijo','unit.each':'c/u','unit.hour':'hora','unit.gallon':'galón','unit.quart':'cuarto','unit.roll':'rollo','unit.tube':'tubo','unit.pack':'paquete','unit.box':'caja','unit.sheet':'hoja',
+'sec.walls':'Paredes','sec.ceiling':'Techo','fld.area':'Área a pintar (pies cuad.)','fld.rate':'Tarifa $ por pie cuad.','fld.wcost':'Costo de paredes','fld.ccost':'Costo de techo',
+'x.title':'Costo adicional','x.qty':'Cantidad','x.rate':'Tarifa','x.amount':'Monto $','x.cost':'Costo','x.why':'Por qué se necesita (aparece en la cotización)','x.add':'+ Agregar costo adicional (alisado, reparaciones…)','x.rm':'Eliminar costo adicional',
+'preset.skim':'Alisado de paredes','preset.skim.ph':'ej. textura pesada o yeso disparejo que hay que alisar primero','preset.patch':'Reparación de grietas y huecos','preset.patch.ph':'ej. grietas, golpes y huecos de clavos para rellenar y lijar','preset.stain':'Sellado de manchas de agua','preset.stain.ph':'ej. marcas de filtraciones viejas que necesitan imprimante antimanchas','preset.texture':'Remoción de textura','preset.texture.ph':'ej. textura de palomitas o cáscara de naranja para raspar','preset.wallpaper':'Remoción de papel tapiz','preset.wallpaper.ph':'ej. dos capas de papel y pegamento para lavar','preset.caulk':'Masilla y calafateo','preset.caulk.ph':'ej. huecos abiertos en las uniones de las molduras','preset.custom':'Otro costo adicional','preset.custom.ph':'Describa el trabajo y por qué se necesita',
+'xw.needs':'Necesita más trabajo de lo normal','xw.hours':'Horas adicionales','xw.why':'Por qué (aparece en la cotización)','xw.whyph':'ej. pintura descascarada para raspar y lijar','xw.cost':'Costo adicional',
+'sec.doors':'Puertas','sec.windows':'Ventanas','dw.adddoor':'+ Agregar puerta','dw.addwin':'+ Agregar ventana','dw.nodoors':'No hay puertas en este cuarto.','dw.nowins':'No hay ventanas en este cuarto.','dw.door':'Puerta','dw.win':'Ventana','dw.rmdoor':'Eliminar puerta','dw.rmwin':'Eliminar ventana','dw.type':'Tipo','dw.width':'Ancho (pies)','dw.height':'Altura (pies)','dw.opening':'Abertura descontada de las paredes','dw.paintdoor':'Pintar esta puerta','dw.paintwin':'Pintar esta ventana (marco y hoja)','dw.sides':'Lados a pintar','dw.side1':'1 lado','dw.side2':'2 lados','dw.rate':'Tarifa $ por lado','dw.ratewin':'Tarifa $ por ventana','dw.cost':'Costo de puerta','dw.wincost':'Costo de ventana',
+'size.door.0':'Interior estándar','size.door.1':'Exterior / entrada','size.door.2':'Clóset plegable','size.door.3':'Puerta doble','size.door.4':'Puerta francesa','size.door.5':'Personalizado','size.win.0':'Pequeña','size.win.1':'Estándar','size.win.2':'Grande','size.win.3':'Ventanal','size.win.4':'Ventana bahía','size.win.5':'Personalizado',
+'sec.trim':'Molduras y ribetes','trim.crown':'Moldura de corona','trim.crown.d':'donde la pared se une al techo','trim.casing':'Contramarcos','trim.casing.d':'marcos alrededor de las aberturas','trim.base':'Zócalo','trim.base.d':'junto al piso','trim.len':'Longitud (pies lin.)','trim.rate':'Tarifa $ por pie lin.','trim.cost':'Costo',
+'sec.mats':'Materiales','mat.auto':'Calcular del trabajo','mat.add':'+ Agregar material','mat.hint':'Precios de ejemplo. Reemplácelos con los de su proveedor. La cotización muestra solo el total de materiales, nunca estos detalles.','mat.name':'Material','mat.qty':'Cantidad','mat.unit':'Unidad','mat.cpu':'Costo por unidad $','mat.total':'Total','mat.rm':'Eliminar material',
+'sec.others':'Otros trabajos','oth.add':'+ Agregar','oth.empty':'Nada agregado. Úselo para gabinetes, barandas, radiadores, puertas de garaje o lo que usted mismo cotice.','oth.include':'Incluir en la cotización','oth.name':'Nombre','oth.qty':'Cantidad','oth.unit':'Unidad','oth.cpu':'Costo por unidad $','oth.rm':'Eliminar',
+'sec.qd':'Datos de la cotización','qd.cname':'Nombre del cliente','qd.addr':'Dirección de la propiedad','qd.terms':'Términos en la cotización',
+'doc.quote':'Cotización','doc.valid':'Válida hasta','doc.prep':'Preparado para','doc.prop':'Propiedad','doc.room':'Tamaño del cuarto','doc.paint':'Sistema de pintura','doc.customer':'Cliente','doc.noaddr':'No ingresada','doc.total':'Total','doc.deposit':'Depósito para comenzar el proyecto','doc.balance':'Saldo al terminar el trabajo','doc.accept':'Aceptación del cliente — Acepto el trabajo y el precio indicados.','doc.sign':'Firma','doc.pname':'Nombre en letra de molde','doc.date':'Fecha','doc.why':'Por qué: ','doc.empty':'Nada está activado aún.',
+'doc.g.walls':'Paredes','doc.g.ceiling':'Techo','doc.g.doors':'Puertas','doc.g.windows':'Ventanas','doc.g.trim':'Molduras y ribetes','doc.trimmin':'Mínimo de paquete de molduras (cuarto pequeño)','doc.g.others':'Otros trabajos','doc.g.mats':'Materiales',
+'doc.matsline':'Pintura, imprimante y materiales para este trabajo','doc.door':'Puerta','doc.win':'Ventana','doc.xw':'trabajo adicional','doc.side':'lado','doc.sides':'lados',
+'doc.inv':'Factura','doc.billto':'Facturar a','doc.ms':'Hitos de pago','doc.mstone':'Hito','doc.nomsset':'No hay hitos definidos.','doc.mspct':'% del total','doc.msflat':'fijo','doc.roomw':'cuarto','doc.wallh':'altura de pared','doc.floor':'de piso',
+'u.typnum':'Escriba un número para cambiarlo; borre el campo para volver.','u.edited':'Editado por usted. El valor calculado es','u.useit':'Borre el campo para usarlo.',
+'u.zipenter':'Ingrese un código postal de 5 dígitos. Hasta entonces se usan las tarifas estándar.','u.zipnone':'No hay datos locales para este código postal, se usan las tarifas estándar','u.ziplocal':'Las tarifas locales son','u.ziptimes':'veces las tarifas estándar.',
+'u.wallsh':'Calculado del cuarto:','u.wallsof':'pies cuad. de pared menos','u.wallsdw':'pies cuad. de puertas y ventanas','u.ceilh':'Calculado del cuarto:','u.trimperim':'Perímetro del cuarto','u.trimcasing':'Contramarco (2 × altura + ancho) más los cuatro lados de cada ventana','u.trimbase':'Perímetro del cuarto menos el ancho de las puertas','u.trimcalc':'Calculado:','u.sumroom':'Cuarto de','u.sumof':'pies cuad. de paredes','u.sumextras':'Incluye','u.sumextras2':'en reparaciones adicionales.','u.noextras':'Sin reparaciones adicionales.','u.door1':'puerta','u.doors':'puertas','u.win1':'ventana','u.wins':'ventanas','u.trimmin':'Mínimo de paquete de molduras aplicado (mínimo de molduras de $400 por cuarto pequeño)',
+'u.mswarnover':'Los porcentajes suman','u.mswarnunder':'del total no está asignado a ningún hito.','u.msfixed':'Corrija los hitos.','u.mscovered':'Los hitos cubren','u.msof':'de',
+'a.home':'Datos de la empresa','zip.manhattan':'Manhattan','zip.staten':'Staten Island','zip.bronx':'El Bronx','zip.westchester':'Westchester y el Valle del Hudson','zip.nassau':'Condado de Nassau','zip.queens':'Queens','zip.brooklyn':'Brooklyn','zip.longisland':'Long Island','zip.newjersey':'Nueva Jersey','zip.connecticut':'Connecticut'
+}};
+const t=k=>(S&&STR[S.lang]&&STR[S.lang][k]!=null)?STR[S.lang][k]:(STR.en[k]!=null?STR.en[k]:k);
+
+/* ---------- pricing data ---------- */
+/* Starting labor rates at the standard (1.00) market. They are scaled by ZIP code and can be overridden anywhere. */
+const BASE={
+  full:{walls:2.25,ceiling:2.50,crown:4.75,casing:4.75,base:4.75},
+  spot:{walls:1.85,ceiling:2.05,crown:3.92,casing:3.92,base:3.92},
+  doorSide:75, window:50, labor:55, skim:2.75, stain:1.50, texture:2.25, wallpaper:2.00, caulk:1.25
+};
+const COATS={full:'Full primer + 2 coats of paint',spot:'Spot primer + 2 coats of paint'};
+const SIZES={
+  doors:[['Standard interior',3,7],['Exterior / entry',3,7],['Closet bi-fold',5,7],['Double door',6,7],['French door',6,8],['Custom',0,0]],
+  windows:[['Small',2,3],['Standard',3,4],['Large',4,5],['Picture window',6,4],['Bay window',8,5],['Custom',0,0]]
+};
+const PRESETS={
+  skim:{label:'Skim coat',unit:'sq ft',rk:'skim',ph:'e.g. heavy texture or uneven plaster has to be smoothed first'},
+  patch:{label:'Patch and crack repair',unit:'hr',rk:'labor',ph:'e.g. cracks, dents and nail holes to fill and sand'},
+  stain:{label:'Water stain seal',unit:'sq ft',rk:'stain',ph:'e.g. old leak marks need a stain-blocking primer'},
+  texture:{label:'Texture removal',unit:'sq ft',rk:'texture',ph:'e.g. popcorn or orange-peel texture to scrape off'},
+  wallpaper:{label:'Wallpaper removal',unit:'sq ft',rk:'wallpaper',ph:'e.g. two layers of paper and glue to wash off'},
+  caulk:{label:'Caulk and wood filler',unit:'ln ft',rk:'caulk',ph:'e.g. open gaps along the trim joints'},
+  custom:{label:'Other extra cost',unit:'flat',rk:null,ph:'Say what the work is and why it is needed'}
+};
+const SEC_PRESETS={
+  'walls':['skim','patch','stain','texture','wallpaper','custom'],
+  'ceiling':['skim','patch','stain','texture','custom'],
+  'trim.crown':['patch','caulk','custom'],
+  'trim.casing':['patch','caulk','custom'],
+  'trim.base':['patch','caulk','custom']
+};
+
+function zipInfo(z){
+  z=String(z||'').trim();
+  if(!/^\d{5}$/.test(z))return{m:1,known:false,name:t('u.zipenter')};
+  const p=+z.slice(0,3);
+  let m=1,name=t('u.zipnone'),known=false;
+  const set=(mm,nn)=>{m=mm;name=nn;known=true};
+  if(p>=100&&p<=102)set(1.5,t('zip.manhattan'));
+  else if(p===103)set(1.15,t('zip.staten'));
+  else if(p===104)set(1.2,t('zip.bronx'));
+  else if(p>=105&&p<=109)set(1.2,t('zip.westchester'));
+  else if(p===110)set(1.15,t('zip.nassau'));
+  else if(p===111||p===113||p===114)set(1.1,t('zip.queens'));
+  else if(p===112)set(1.3,t('zip.brooklyn'));
+  else if(p>=115&&p<=119)set(1.15,t('zip.longisland'));
+  else if(p>=70&&p<=89)set(0.9,t('zip.newjersey'));
+  else if(p>=60&&p<=69)set(1.1,t('zip.connecticut'));
+  return{m,known,name};
+}
+function baseVal(key){
+  if(typeof S!=='undefined'&&S&&S.base&&S.base[key]!=null&&isFinite(+S.base[key]))return +S.base[key];
+  const p=key.split('.');return p.length===2?BASE[p[0]][p[1]]:BASE[key]
+}
+
+/* ---------- state ---------- */
+const mkDoor=()=>({type:'Standard interior',w:3,h:7,paint:true,sides:2,rate:null,extra:false,xh:1,xn:''});
+const mkWin=()=>({type:'Standard',w:3,h:4,paint:true,rate:null,extra:false,xh:0.5,xn:''});
+const mkOther=()=>({name:'Custom item',qty:1,unit:'each',cost:25,on:true,extra:false,xh:1,xn:''});
+const mkMat=()=>({name:'New material',qty:1,unit:'each',cost:10});
+function fresh(){return{
+  lang:'en',
+  company:{name:'Your Painting Company',phone:'',email:'',license:'',logo:''},
+  zip:'10001', overrides:{}, coating:'full',
+  base:{'full.walls':2.25,'full.ceiling':2.50,'full.crown':4.75,'full.casing':4.75,'full.base':4.75,'spot.walls':1.85,'spot.ceiling':2.05,'spot.crown':3.92,'spot.casing':3.92,'spot.base':3.92,doorSide:75,window:50,labor:55,skim:2.75,stain:1.50,texture:2.25,wallpaper:2.00,caulk:1.25},
+  room:{l:15,w:10,h:8},
+  walls:{on:true,area:null,extras:[]},
+  ceiling:{on:true,area:null,extras:[]},
+  doors:[mkDoor(),mkDoor()], windows:[mkWin()],
+  trim:{crown:{on:false,len:null,extras:[]},casing:{on:true,len:null,extras:[]},base:{on:true,len:null,extras:[]}},
+  materials:[
+    {name:'Wall paint',qty:2,unit:'gallon',cost:42},
+    {name:'Ceiling paint',qty:1,unit:'gallon',cost:36},
+    {name:'Trim and door paint',qty:1,unit:'gallon',cost:52},
+    {name:'Primer',qty:2,unit:'gallon',cost:30},
+    {name:'Spackle',qty:1,unit:'each',cost:12},
+    {name:'Caulk',qty:3,unit:'tube',cost:5},
+    {name:'Painter’s tape',qty:3,unit:'roll',cost:7},
+    {name:'Drop cloths',qty:2,unit:'each',cost:14},
+    {name:'Roller covers',qty:4,unit:'each',cost:6},
+    {name:'Brushes',qty:2,unit:'each',cost:14}
+  ],
+  others:[],
+  milestones:[
+    {name:'Deposit',mode:'%',value:30,due:'Due on signing'},
+    {name:'Balance on completion',mode:'%',value:70,due:'Due at final walkthrough'}
+  ],
+  client:{name:'',address:''},
+  terms:'This quote is valid for 30 days. Extra repairs found once work begins are priced and approved with you before they are done. Payment terms are agreed before the start date.',
+  quoteOn:false, qn:0, qdate:0,
+  invoiceOn:false, inNo:0, inDate:0
+}}
+let S=fresh(), C=null;
+
+const STORE='painting-estimator-v1';
+function load(){try{
+  const raw=localStorage.getItem(STORE); if(!raw)return;
+  const d=JSON.parse(raw);
+  if(d.company)Object.assign(S.company,d.company);
+  if(typeof d.zip==='string')S.zip=d.zip;
+  if(d.overrides&&typeof d.overrides==='object')S.overrides=d.overrides;
+  if(d.coating&&COATS[d.coating])S.coating=d.coating;
+  if(typeof d.terms==='string'&&d.terms)S.terms=d.terms;
+  if(+d.qn>0)S.qn=+d.qn;
+  if(Array.isArray(d.milestones)&&d.milestones.length)S.milestones=d.milestones;
+  if(+d.inNo>0)S.inNo=+d.inNo;
+  if(d.base&&typeof d.base==='object')Object.assign(S.base,d.base);
+  if(d.lang==='es'||d.lang==='en')S.lang=d.lang;
+}catch(e){}}
+let saveT=0;
+function save(){clearTimeout(saveT);saveT=setTimeout(()=>{try{
+  localStorage.setItem(STORE,JSON.stringify({company:S.company,zip:S.zip,overrides:S.overrides,coating:S.coating,terms:S.terms,qn:S.qn,milestones:S.milestones,inNo:S.inNo,base:S.base,lang:S.lang}));
+}catch(e){}},400)}
+
+/* ---------- language ---------- */
+function applyI18n(){
+  document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=t(el.dataset.i18n)});
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{el.placeholder=t(el.dataset.i18nPh)});
+  document.querySelectorAll('[data-i18n-aria]').forEach(el=>{el.setAttribute('aria-label',t(el.dataset.i18nAria))});
+  document.querySelectorAll('[data-lang]').forEach(b=>b.classList.toggle('on',b.dataset.lang===S.lang));
+  document.documentElement.lang=S.lang;
+  document.title=t('app.title');
+}
+function setLang(l){
+  if(l!=='en'&&l!=='es')return;
+  if(S.lang===l)return;
+  S.lang=l; msCount=-1;
+  render(); applyI18n(); update();
+}
+
+/* ---------- path access ---------- */
+const getP=p=>p.split('.').reduce((o,k)=>o==null?o:o[k],S);
+function setP(p,v){const a=p.split('.');const last=a.pop();a.reduce((o,k)=>o[k],S)[last]=v}
+const rkey=k=>k.replace('@',S.coating);
+function rate(key){
+  const o=S.overrides[key];
+  if(o!=null)return o;
+  return r2(baseVal(key)*zipInfo(S.zip).m);
+}
+function dflt(k){
+  if(!C)return null;
+  if(k==='walls.area')return C.netWall;
+  if(k==='ceiling.area')return C.ceilA;
+  if(k==='trim.crown.len')return C.perim;
+  if(k==='trim.casing.len')return C.casingLen;
+  if(k==='trim.base.len')return C.baseLen;
+  if(/^doors\.\d+\.rate$/.test(k))return rate('doorSide');
+  if(/^windows\.\d+\.rate$/.test(k))return rate('window');
+  const m=k.match(/^(.+)\.extras\.(\d+)\.rate$/);
+  if(m){const row=getP(m[1]+'.extras.'+m[2]);const rk=row&&PRESETS[row.key]&&PRESETS[row.key].rk;return rk?rate(rk):0}
+  return null;
+}
+function getDisp(k){
+  if(k==='base.trimFull')return S.base['full.casing'];
+  if(k==='base.trimSpot')return S.base['spot.casing'];
+  if(k.startsWith('rate:'))return rate(rkey(k.slice(5)));
+  const v=getP(k);
+  return v==null?dflt(k):v;
+}
+
+/* ---------- calculation ---------- */
+function extrasCalc(C,path,list){
+  let sum=0;
+  const items=list.map((row,i)=>{
+    const rk=PRESETS[row.key].rk;
+    const rt=row.rate!=null?row.rate:(rk?rate(rk):0);
+    const amt=r2(row.qty*rt);
+    C.x[path+'.extras.'+i]=amt; sum+=amt;
+    return{row,rt,amt};
+  });
+  return{items,sum:r2(sum)};
+}
+function calc(){
+  const r=S.room;
+  const perim=2*(r.l+r.w), gross=perim*r.h;
+  const dA=S.doors.reduce((s,d)=>s+d.w*d.h,0), wA=S.windows.reduce((s,d)=>s+d.w*d.h,0);
+  const netWall=Math.max(0,gross-dA-wA);
+  const doorW=S.doors.reduce((s,d)=>s+d.w,0);
+  const casingLen=S.doors.reduce((s,d)=>s+2*d.h+d.w,0)+S.windows.reduce((s,d)=>s+2*(d.w+d.h),0);
+  const baseLen=Math.max(0,perim-doorW), ceilA=r.l*r.w;
+  const K={perim,gross,dA,wA,netWall,doorW,casingLen,baseLen,ceilA,x:{},q:{}};
+  const co=S.coating;
+  const sec=(path,s,qty,rk)=>{
+    const rt=rate(rk), base=s.on?r2(qty*rt):0, ex=extrasCalc(K,path,s.extras);
+    K.q[path]=qty;
+    return{qty,rt,base,ex,total:s.on?r2(base+ex.sum):0};
+  };
+  K.walls=sec('walls',S.walls,S.walls.area!=null?S.walls.area:netWall,co+'.walls');
+  K.ceiling=sec('ceiling',S.ceiling,S.ceiling.area!=null?S.ceiling.area:ceilA,co+'.ceiling');
+  K.crown=sec('trim.crown',S.trim.crown,S.trim.crown.len!=null?S.trim.crown.len:perim,co+'.crown');
+  K.casing=sec('trim.casing',S.trim.casing,S.trim.casing.len!=null?S.trim.casing.len:casingLen,co+'.casing');
+  K.base=sec('trim.base',S.trim.base,S.trim.base.len!=null?S.trim.base.len:baseLen,co+'.base');
+  const labor=rate('labor');
+  K.labor=labor;
+  K.doors=S.doors.map((d,i)=>{
+    const rt=d.rate!=null?d.rate:rate('doorSide');
+    const paint=d.paint?r2(d.sides*rt):0, xt=(d.paint&&d.extra)?r2(d.xh*labor):0;
+    K.x['doors.'+i]=paint; K.x['doors.'+i+'.extra']=xt;
+    return{d,rt,paint,xt,total:r2(paint+xt),area:d.w*d.h};
+  });
+  K.windows=S.windows.map((d,i)=>{
+    const rt=d.rate!=null?d.rate:rate('window');
+    const paint=d.paint?r2(rt):0, xt=(d.paint&&d.extra)?r2(d.xh*labor):0;
+    K.x['windows.'+i]=paint; K.x['windows.'+i+'.extra']=xt;
+    return{d,rt,paint,xt,total:r2(paint+xt),area:d.w*d.h};
+  });
+  K.others=S.others.map((o,i)=>{
+    const base=o.on?r2(o.qty*o.cost):0, xt=(o.on&&o.extra)?r2(o.xh*labor):0;
+    K.x['others.'+i]=base; K.x['others.'+i+'.extra']=xt;
+    return{o,base,xt,total:r2(base+xt)};
+  });
+  K.mat=S.materials.map((m,i)=>{const a=r2(m.qty*m.cost);K.x['mat.'+i]=a;return a});
+  K.matTotal=r2(K.mat.reduce((s,a)=>s+a,0));
+  K.doorsTotal=r2(K.doors.reduce((s,a)=>s+a.total,0));
+  K.windowsTotal=r2(K.windows.reduce((s,a)=>s+a.total,0));
+  K.othersTotal=r2(K.others.reduce((s,a)=>s+a.total,0));
+  K.trimTotal=r2(K.crown.total+K.casing.total+K.base.total);
+  const trimPkg=r2(K.casing.total+K.base.total);
+  K.trimMinAdj=(S.walls.on&&trimPkg>0&&trimPkg<400)?r2(400-trimPkg):0;
+  K.trimTotal=r2(K.trimTotal+K.trimMinAdj);
+  K.total=r2(K.walls.total+K.ceiling.total+K.doorsTotal+K.windowsTotal+K.trimTotal+K.othersTotal+K.matTotal);
+  const secEx=[[S.walls,K.walls],[S.ceiling,K.ceiling],[S.trim.crown,K.crown],[S.trim.casing,K.casing],[S.trim.base,K.base]]
+    .reduce((s,p)=>s+(p[0].on?p[1].ex.sum:0),0);
+  K.extrasTotal=r2(secEx+K.doors.reduce((s,a)=>s+a.xt,0)+K.windows.reduce((s,a)=>s+a.xt,0)+K.others.reduce((s,a)=>s+a.xt,0));
+  return K;
+}
+
+/* ---------- html builders ---------- */
+const num=(k,o={})=>`<input class="in n" type="number" inputmode="decimal" min="0" step="${o.step||'any'}" data-k="${k}"${o.nullable?' data-nullable':''}>`;
+const txt=(k,ph)=>`<input class="in" type="text" data-k="${k}"${ph?` placeholder="${esc(ph)}"`:''}>`;
+const fld=(label,inner,show)=>`<label class="f"${show?` data-showif="${show}"`:''}><span>${label}</span>${inner}</label>`;
+const chk=(k,label,o={})=>`<label class="chk${o.title?' ttl':''}"${o.show?` data-showif="${o.show}"`:''}><input type="checkbox" data-k="${k}"><span>${label}</span></label>`;
+const sel=(k,opts,o={})=>`<select class="in" data-k="${k}"${o.int?' data-int':''}${o.size?` data-size="${o.size}"`:''}>${opts.map(p=>`<option value="${esc(p[0])}">${esc(p[1])}</option>`).join('')}</select>`;
+const out=(k,cls)=>`<b class="amt" data-out="${k}"></b>`;
+
+function extras(path){
+  const list=getP(path+'.extras');
+  const per=S.lang==='es'?'por':'per';
+  const rows=list.map((r,i)=>{
+    const p=`${path}.extras.${i}`;
+    const un=unitName(r.unit);
+    const head=r.key?`<b>${esc(t('preset.'+r.key))}</b>`:`${txt(p+'.label')}`;
+    return `<div class="xrow">
+      <div class="xhead">${head}<button class="rm" type="button" data-rm="${p}" aria-label="${esc(t('x.rm'))}">×</button></div>
+      <div class="row">
+        ${r.unit==='flat'?'':fld(t('x.qty')+' ('+esc(un)+')',num(p+'.qty'))}
+        ${fld(r.unit==='flat'?t('x.amount'):t('x.rate')+' $ '+per+' '+esc(un),num(p+'.rate',{nullable:true}))}
+        <div class="f"><span>${t('x.cost')}</span>${out('x:'+p)}</div>
+      </div>
+      ${fld(t('x.why'),txt(p+'.note',t('preset.'+(r.key||'custom')+'.ph')))}
+    </div>`;
+  }).join('');
+  const opts=SEC_PRESETS[path].map(k=>`<option value="${k}">${esc(t('preset.'+k))}</option>`).join('');
+  return `<div class="extras"><h4>${t('x.title')}</h4>${rows}<select class="in addx" data-addx="${path}" aria-label="${esc(t('x.add'))}"><option value="">${esc(t('x.add'))}</option>${opts}</select></div>`;
+}
+const unitName=u=>t('unit.'+({'sq ft':'sqft','ln ft':'lnft','hr':'hr','flat':'flat','each':'each','hour':'hour','gallon':'gallon','quart':'quart','roll':'roll','tube':'tube','pack':'pack','box':'box','sheet':'sheet'}[u]||'each'));
+
+function secSetup(){
+  const coats=Object.keys(COATS).map(k=>`<label class="coat"><input type="radio" name="coat" value="${k}" data-k="coating"><span class="ct">${t('coat.'+k)}</span><span class="cd" data-out="coat.${k}"></span></label>`).join('');
+  return `<section class="blk"><div class="bh"><h2>${t('setup.title')}</h2></div><div class="bb">
+    <div class="row">
+      ${fld(t('setup.zip'),'<input class="in" type="text" inputmode="numeric" maxlength="5" data-k="zip" autocomplete="off">')}
+      ${fld(t('setup.labor'),num('rate:labor',{nullable:true}))}
+      <div class="f"><span>&nbsp;</span><button class="btn" type="button" data-act="resetPrices">${t('setup.reset')}</button></div>
+    </div>
+    <p class="hint" data-out="zip.name"></p>
+    <p class="hint">${t('setup.sughint')}</p>
+    <h3>${t('setup.base')}</h3>
+    <p class="hint">${t('setup.basehint')}</p>
+    <div class="row">
+      ${fld(t('base.wallsfull'),num('base.full.walls'))}
+      ${fld(t('base.wallsspot'),num('base.spot.walls'))}
+      ${fld(t('base.ceilfull'),num('base.full.ceiling'))}
+      ${fld(t('base.ceilspot'),num('base.spot.ceiling'))}
+      ${fld(t('base.trimfull'),num('base.trimFull'))}
+      ${fld(t('base.trimspot'),num('base.trimSpot'))}
+      ${fld(t('base.door'),num('base.doorSide'))}
+      ${fld(t('base.window'),num('base.window'))}
+    </div>
+    <h3>${t('setup.system')}</h3>
+    <div class="coats">${coats}</div>
+    <h3>${t('setup.roomsize')}</h3>
+    <div class="row">${fld(t('room.l'),num('room.l'))}${fld(t('room.w'),num('room.w'))}${fld(t('room.h'),num('room.h'))}</div>
+    <dl class="calc">
+      <div><dt>${t('calc.perim')}</dt><dd data-out="calc.perim"></dd></div>
+      <div><dt>${t('calc.gross')}</dt><dd data-out="calc.gross"></dd></div>
+      <div><dt>${t('calc.doors')}</dt><dd data-out="calc.doors"></dd></div>
+      <div><dt>${t('calc.wins')}</dt><dd data-out="calc.wins"></dd></div>
+      <div class="net"><dt>${t('calc.net')}</dt><dd data-out="calc.net"></dd></div>
+      <div><dt>${t('calc.ceil')}</dt><dd data-out="calc.ceil"></dd></div>
+    </dl>
+  </div></section>`;
+}
+function secWalls(){return `<section class="blk" data-dim="walls.on"><div class="bh">${chk('walls.on',t('sec.walls'),{title:true})}<span class="sum" data-out="walls.total"></span></div><div class="bb">
+  <div class="row">${fld(t('fld.area'),num('walls.area',{nullable:true}))}${fld(t('fld.rate'),num('rate:@.walls',{nullable:true}))}<div class="f"><span>${t('fld.wcost')}</span>${out('walls.base')}</div></div>
+  <p class="hint" data-out="walls.hint"></p>${extras('walls')}</div></section>`}
+function secCeiling(){return `<section class="blk" data-dim="ceiling.on"><div class="bh">${chk('ceiling.on',t('sec.ceiling'),{title:true})}<span class="sum" data-out="ceiling.total"></span></div><div class="bb">
+  <div class="row">${fld(t('fld.area'),num('ceiling.area',{nullable:true}))}${fld(t('fld.rate'),num('rate:@.ceiling',{nullable:true}))}<div class="f"><span>${t('fld.ccost')}</span>${out('ceiling.base')}</div></div>
+  <p class="hint" data-out="ceiling.hint"></p>${extras('ceiling')}</div></section>`}
+
+function extraWork(p,show){
+  return `${chk(p+'.extra',t('xw.needs'),{show})}
+  <div class="row" data-showif="${p}.extra">${fld(t('xw.hours'),num(p+'.xh'))}${fld(t('xw.why'),txt(p+'.xn',t('xw.whyph')))}<div class="f"><span>${t('xw.cost')}</span>${out('x:'+p+'.extra')}</div></div>`;
+}
+function secDoors(){
+  const items=S.doors.map((d,i)=>{
+    const p=`doors.${i}`;
+    return `<div class="item"><div class="ih"><b>${t('dw.door')} ${i+1}</b><button class="rm" type="button" data-rm="${p}" aria-label="${esc(t('dw.rmdoor'))}">×</button></div>
+    <div class="row">
+      ${fld(t('dw.type'),sel(p+'.type',SIZES.doors.map((s,si)=>[s[0],t('size.door.'+si)]),{size:p}))}
+      ${fld(t('dw.width'),num(p+'.w'),p+'.type=Custom')}
+      ${fld(t('dw.height'),num(p+'.h'),p+'.type=Custom')}
+      <div class="f"><span>${t('dw.opening')}</span>${out('d:'+p)}</div>
+    </div>
+    ${chk(p+'.paint',t('dw.paintdoor'))}
+    <div data-showif="${p}.paint">
+      <div class="row">
+        ${fld(t('dw.sides'),sel(p+'.sides',[['1',t('dw.side1')],['2',t('dw.side2')]],{int:true}))}
+        ${fld(t('dw.rate'),num(p+'.rate',{nullable:true}))}
+        <div class="f"><span>${t('dw.cost')}</span>${out('x:'+p)}</div>
+      </div>
+      ${extraWork(p)}
+    </div></div>`;
+  }).join('');
+  return `<section class="blk"><div class="bh"><h2>${t('sec.doors')}</h2><div style="display:flex;gap:10px;align-items:center"><span class="sum" data-out="doors.total"></span><button class="btn small" type="button" data-act="addDoor">${t('dw.adddoor')}</button></div></div><div class="bb">${items||`<p class="hint">${t('dw.nodoors')}</p>`}</div></section>`;
+}
+function secWindows(){
+  const items=S.windows.map((d,i)=>{
+    const p=`windows.${i}`;
+    return `<div class="item"><div class="ih"><b>${t('dw.win')} ${i+1}</b><button class="rm" type="button" data-rm="${p}" aria-label="${esc(t('dw.rmwin'))}">×</button></div>
+    <div class="row">
+      ${fld(t('dw.type'),sel(p+'.type',SIZES.windows.map((s,si)=>[s[0],t('size.win.'+si)]),{size:p}))}
+      ${fld(t('dw.width'),num(p+'.w'),p+'.type=Custom')}
+      ${fld(t('dw.height'),num(p+'.h'),p+'.type=Custom')}
+      <div class="f"><span>${t('dw.opening')}</span>${out('d:'+p)}</div>
+    </div>
+    ${chk(p+'.paint',t('dw.paintwin'))}
+    <div data-showif="${p}.paint">
+      <div class="row">
+        ${fld(t('dw.ratewin'),num(p+'.rate',{nullable:true}))}
+        <div class="f"><span>${t('dw.wincost')}</span>${out('x:'+p)}</div>
+      </div>
+      ${extraWork(p)}
+    </div></div>`;
+  }).join('');
+  return `<section class="blk"><div class="bh"><h2>${t('sec.windows')}</h2><div style="display:flex;gap:10px;align-items:center"><span class="sum" data-out="windows.total"></span><button class="btn small" type="button" data-act="addWindow">${t('dw.addwin')}</button></div></div><div class="bb">${items||`<p class="hint">${t('dw.nowins')}</p>`}</div></section>`;
+}
+function trimItem(k,label,desc){
+  const p='trim.'+k;
+  return `<div class="item" data-dim="${p}.on"><div class="ih">${chk(p+'.on',`<b>${esc(label)}</b> <small>${esc(desc)}</small>`)}<span class="sum" data-out="${p}.total"></span></div><div class="bb">
+    <div class="row">${fld(t('trim.len'),num(p+'.len',{nullable:true}))}${fld(t('trim.rate'),num('rate:@.'+k,{nullable:true}))}<div class="f"><span>${t('trim.cost')}</span>${out(p+'.base')}</div></div>
+    <p class="hint" data-out="${p}.hint"></p>${extras(p)}</div></div>`;
+}
+function secTrim(){
+  return `<section class="blk"><div class="bh"><h2>${t('sec.trim')}</h2><span class="sum" data-out="trim.total"></span></div><div class="bb">
+    ${trimItem('crown',t('trim.crown'),t('trim.crown.d'))}
+    ${trimItem('casing',t('trim.casing'),t('trim.casing.d'))}
+    ${trimItem('base',t('trim.base'),t('trim.base.d'))}
+    <p class="hint" data-out="trim.minadj"></p>
+  </div></section>`;
+}
+const MAT_UNITS=['gallon','quart','each','roll','tube','pack','box','sheet'].map(u=>[u,u]);
+function secMaterials(){
+  const rows=S.materials.map((m,i)=>{
+    const p=`materials.${i}`;
+    return `<div class="item"><div class="row">
+      ${fld(t('mat.name'),txt(p+'.name'))}
+      ${fld(t('mat.qty'),num(p+'.qty'))}
+      ${fld(t('mat.unit'),sel(p+'.unit',MAT_UNITS.map(u=>[u[0],unitName(u[0])])))}
+      ${fld(t('mat.cpu'),num(p+'.cost'))}
+      <div class="f"><span>${t('mat.total')}</span>${out('x:mat.'+i)}</div>
+      <div class="f"><span>&nbsp;</span><button class="rm" type="button" data-rm="${p}" aria-label="${esc(t('mat.rm'))}">×</button></div>
+    </div></div>`;
+  }).join('');
+  return `<section class="blk"><div class="bh"><h2>${t('sec.mats')}</h2><div style="display:flex;gap:10px;align-items:center"><span class="sum" data-out="mat.total"></span><button class="btn small" type="button" data-act="autoMaterials">${t('mat.auto')}</button><button class="btn small" type="button" data-act="addMaterial">${t('mat.add')}</button></div></div><div class="bb">
+    <p class="hint">${t('mat.hint')}</p>${rows}</div></section>`;
+}
+function secOthers(){
+  const rows=S.others.map((o,i)=>{
+    const p=`others.${i}`;
+    return `<div class="item" data-dim="${p}.on"><div class="ih">${chk(p+'.on',`<b>${t('oth.include')}</b>`)}<span class="sum" data-out="x:${p}"></span><button class="rm" type="button" data-rm="${p}" aria-label="${esc(t('oth.rm'))}">×</button></div><div class="bb">
+      <div class="row">${fld(t('oth.name'),txt(p+'.name'))}${fld(t('oth.qty'),num(p+'.qty'))}${fld(t('oth.unit'),sel(p+'.unit',['sq ft','ln ft','each','hour'].map(u=>[u,unitName(u)])))}${fld(t('oth.cpu'),num(p+'.cost'))}</div>
+      ${extraWork(p)}
+    </div></div>`;
+  }).join('');
+  return `<section class="blk"><div class="bh"><h2>${t('sec.others')}</h2><div style="display:flex;gap:10px;align-items:center"><span class="sum" data-out="others.total"></span><button class="btn small" type="button" data-act="addOther">${t('oth.add')}</button></div></div><div class="bb">
+    ${rows||`<p class="hint">${t('oth.empty')}</p>`}</div></section>`;
+}
+function secQuote(){
+  return `<section class="blk"><div class="bh"><h2>${t('sec.qd')}</h2></div><div class="bb">
+    <div class="row">${fld(t('qd.cname'),txt('client.name'))}${fld(t('qd.addr'),txt('client.address'))}</div>
+    ${fld(t('qd.terms'),'<textarea class="in" data-k="terms"></textarea>')}
+    <div style="margin-top:12px"><button class="btn primary" type="button" data-act="quote">${t('act.quote')}</button></div>
+  </div></section>`;
+}
+function render(){
+  $('#body').innerHTML=[secSetup(),secWalls(),secCeiling(),secDoors(),secWindows(),secTrim(),secMaterials(),secOthers(),secQuote()].join('');
+}
+
+/* ---------- quote ---------- */
+const typeName=(list,key,val)=>{const i=list.findIndex(x=>x[0]===val);return i>=0?t(key+'.'+i).toLowerCase():String(val).toLowerCase()};
+function quoteData(){
+  const groups=[];
+  const G=(title,lines)=>{if(lines.length)groups.push({title,lines,sub:r2(lines.reduce((s,l)=>s+l.a,0))})};
+  const exLines=ex=>ex.items.map(it=>({x:1,d:it.row.key?t('preset.'+it.row.key):it.row.label,s:it.row.unit==='flat'?'':`${n(it.row.qty)} ${unitName(it.row.unit)} × ${money(it.rt)}`,a:it.amt,why:it.row.note}));
+  const sq=t('unit.sqft'), ln=t('unit.lnft'), hr=t('unit.hr');
+  const L=[];
+  if(S.walls.on){
+    const w=C.walls;
+    L.push({d:t('doc.g.walls'),s:`${n(w.qty)} ${sq} × ${money(w.rt)}`+(S.walls.area==null?`. ${t('u.wallsh')} ${n(C.gross)} ${t('u.wallsof')} ${n(C.dA+C.wA)} ${t('u.wallsdw')}`:''),a:w.base},...exLines(w.ex));
+  }
+  G(t('doc.g.walls'),L.splice(0));
+  if(S.ceiling.on){const c=C.ceiling;L.push({d:t('doc.g.ceiling'),s:`${n(c.qty)} ${sq} × ${money(c.rt)}`,a:c.base},...exLines(c.ex))}
+  G(t('doc.g.ceiling'),L.splice(0));
+  C.doors.forEach((e,i)=>{
+    if(!e.d.paint)return;
+    L.push({d:`${t('doc.door')} ${i+1}, ${typeName(SIZES.doors,'size.door',e.d.type)}`,s:`${e.d.sides} ${e.d.sides>1?t('doc.sides'):t('doc.side')} × ${money(e.rt)}`,a:e.paint});
+    if(e.d.extra)L.push({x:1,d:`${t('doc.door')} ${i+1}, ${t('doc.xw')}`,s:`${n(e.d.xh)} ${hr} × ${money(C.labor)}`,a:e.xt,why:e.d.xn});
+  });
+  G(t('doc.g.doors'),L.splice(0));
+  C.windows.forEach((e,i)=>{
+    if(!e.d.paint)return;
+    L.push({d:`${t('doc.win')} ${i+1}, ${typeName(SIZES.windows,'size.win',e.d.type)}`,s:`${n(e.d.w)}′ × ${n(e.d.h)}′`,a:e.paint});
+    if(e.d.extra)L.push({x:1,d:`${t('doc.win')} ${i+1}, ${t('doc.xw')}`,s:`${n(e.d.xh)} ${hr} × ${money(C.labor)}`,a:e.xt,why:e.d.xn});
+  });
+  G(t('doc.g.windows'),L.splice(0));
+  [['crown','trim.crown'],['casing','trim.casing'],['base','trim.base']].forEach(([k,tk])=>{
+    if(!S.trim[k].on)return;
+    const tt=C[k];
+    L.push({d:t(tk),s:`${n(tt.qty)} ${ln} × ${money(tt.rt)}`,a:tt.base},...exLines(tt.ex));
+  });
+  if(C.trimMinAdj>0)L.push({d:t('doc.trimmin'),s:'',a:C.trimMinAdj});
+  G(t('doc.g.trim'),L.splice(0));
+  C.others.forEach(e=>{
+    if(!e.o.on)return;
+    L.push({d:e.o.name,s:`${n(e.o.qty)} ${unitName(e.o.unit)} × ${money(e.o.cost)}`,a:e.base});
+    if(e.o.extra)L.push({x:1,d:`${e.o.name}, ${t('doc.xw')}`,s:`${n(e.o.xh)} ${hr} × ${money(C.labor)}`,a:e.xt,why:e.o.xn});
+  });
+  G(t('doc.g.others'),L.splice(0));
+  if(C.matTotal>0)G(t('doc.g.mats'),[{d:t('doc.matsline'),s:'',a:C.matTotal}]);
+  const d=new Date(S.qdate||Date.now()), until=new Date(d.getTime()+30*864e5);
+  const fmt=x=>x.toLocaleDateString(LOC(),{year:'numeric',month:'long',day:'numeric'});
+  const ymd=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
+  return{groups,date:fmt(d),until:fmt(until),no:`Q-${ymd}-${String(S.qn||1).padStart(3,'0')}`,
+    room:`${n(S.room.l)}′ × ${n(S.room.w)}′ ${t('doc.roomw')}, ${n(S.room.h)}′ ${t('doc.wallh')} (${n(C.ceilA)} ${sq} ${t('doc.floor')})`,
+    system:t('coat.'+S.coating)};
+}
+function logoHtml(){return S.company.logo?`<img src="${S.company.logo}" alt="">`:LOGO}
+function renderQuote(){
+  const q=quoteData(), c=S.company;
+  const contact=[c.phone,c.email,c.license].filter(Boolean).map(esc).join(' · ');
+  const groups=q.groups.map(g=>`<div class="qgrp"><div class="qgh"><span>${esc(g.title)}</span><b>${money(g.sub)}</b></div>${g.lines.map(l=>`<div class="ql${l.x?' x':''}"><span class="d">${esc(l.d)}</span><span class="a">${money(l.a)}</span>${l.s?`<span class="s">${esc(l.s)}</span>`:''}${l.why?`<span class="why">${esc(t('doc.why')+l.why)}</span>`:''}</div>`).join('')}</div>`).join('');
+  return `<article class="qdoc">
+    <div class="qh"><div class="qco"><div class="logo big" style="width:64px;height:64px">${logoHtml()}</div><div><h2>${esc(c.name||'Your Painting Company')}</h2>${contact?`<p>${contact}</p>`:''}</div></div>
+      <div class="qno"><p>${t('doc.quote')}</p><b>${esc(q.no)}</b><p>${esc(q.date)}</p><p>${t('doc.valid')} ${esc(q.until)}</p></div></div>
+    <div class="qmeta">
+      <div><span>${t('doc.prep')}</span> ${esc(S.client.name||t('doc.customer'))}</div>
+      <div><span>${t('doc.prop')}</span> ${esc(S.client.address||t('doc.noaddr'))}</div>
+      <div><span>${t('doc.room')}</span> ${esc(q.room)}</div>
+      <div><span>${t('doc.paint')}</span> ${esc(q.system)}</div>
+    </div>
+    ${groups||`<p class="hint" style="margin-top:18px">${t('doc.empty')}</p>`}
+    <div class="qtotal"><span>${t('doc.total')}</span><b>${money(C.total)}</b></div>
+    <p class="qterms">${esc(S.terms)}</p>
+    <div class="qdep"><span>${t('doc.deposit')}</span><b>$ __________</b></div>
+    <div class="qdep"><span>${t('doc.balance')}</span><b>$ __________</b></div>
+    <div class="qsign"><p><b>${t('doc.accept')}</b></p>
+    <p>${t('doc.sign')}: <span class="line"></span>&nbsp;&nbsp;${t('doc.date')}: <span class="line" style="min-width:140px"></span></p>
+    <p>${t('doc.pname')}: <span class="line"></span></p></div>
+  </article>`;
+}
+function quoteText(){
+  const q=quoteData(), c=S.company, T=[];
+  T.push(c.name||'Your Painting Company');
+  const contact=[c.phone,c.email,c.license].filter(Boolean).join(' | ');
+  if(contact)T.push(contact);
+  T.push('',`${t('doc.quote')} ${q.no}`,`${q.date} (${t('doc.valid')} ${q.until})`,'',
+    `${t('doc.prep')}: ${S.client.name||t('doc.customer')}`,`${t('doc.prop')}: ${S.client.address||t('doc.noaddr')}`,`${t('doc.room')}: ${q.room}`,`${t('doc.paint')}: ${q.system}`,'');
+  q.groups.forEach(g=>{
+    T.push(`${g.title.toUpperCase()}  ${money(g.sub)}`);
+    g.lines.forEach(l=>{
+      T.push(`  ${l.x?'+ ':''}${l.d}${l.s?' ('+l.s+')':''}: ${money(l.a)}`);
+      if(l.why)T.push(`      ${t('doc.why')}${l.why}`);
+    });
+    T.push('');
+  });
+  T.push(`${t('doc.total').toUpperCase()}  ${money(C.total)}`,'',S.terms,'',
+    `${t('doc.deposit')}: $__________`,`${t('doc.balance')}: $__________`,'',
+    t('doc.accept'),`${t('doc.sign')}: ______________________________  ${t('doc.date')}: ____________`,`${t('doc.pname')}: ______________________________`);
+  return T.join('\n');
+}
+
+/* ---------- milestones & invoice ---------- */
+let MS={rows:[],sumPct:0,total:0,covered:0,warn:''};
+function calcMilestones(){
+  const total=C?C.total:0;
+  let sp=0;
+  const rows=S.milestones.map(m=>{
+    const isFlat=m.mode==='$';
+    const v=Math.max(0,+m.value||0);
+    const amt=isFlat?r2(v):r2(total*v/100);
+    if(!isFlat)sp+=v;
+    return{m,amt,isFlat,v};
+  });
+  const covered=r2(rows.reduce((s,r)=>s+r.amt,0));
+  let warn='';
+  if(sp>100)warn=`${t('u.mswarnover')} ${n(sp)}% — over 100%. ${t('u.msfixed')}`;
+  else if(sp<100)warn=`${t('u.mswarnover')} ${n(sp)}% — ${money(Math.max(0,total-covered))} ${t('u.mswarnunder')}`;
+  MS={rows,sumPct:sp,total,covered,warn};
+}
+let msCount=-1;
+function renderMs(){
+  const el=$('#msList');if(!el)return;
+  el.innerHTML=S.milestones.map((m,i)=>`<div class="item"><div class="row">
+    ${fld(t('ms.name'),txt('milestones.'+i+'.name'))}
+    ${fld(t('ms.type'),`<select class="in" data-k="milestones.${i}.mode"><option value="%"> ${t('ms.pct')}</option><option value="$">${t('ms.flat')}</option></select>`)}
+    ${fld(t('ms.value'),num('milestones.'+i+'.value'))}
+    ${fld(t('ms.due'),txt('milestones.'+i+'.due',t('ms.dueph')))}
+    <div class="f"><span>${t('ms.amount')}</span><b class="amt" data-out="ms.${i}"></b></div>
+    <div class="f"><span>&nbsp;</span><button class="rm" type="button" data-rmms="${i}" aria-label="${esc(t('ms.rm'))}">×</button></div>
+  </div></div>`).join('')||`<p class="hint">${t('ms.empty')}</p>`;
+  el.querySelectorAll('[data-k]').forEach(inp=>{
+    const k=inp.dataset.k,v=getDisp(k);
+    if(inp.tagName==='SELECT')inp.value=String(v);
+    else inp.value=v==null?'':String(v);
+  });
+}
+function syncMs(){
+  if(!$('#msList'))return;
+  if(S.milestones.length!==msCount){msCount=S.milestones.length;renderMs()}
+  calcMilestones();
+  MS.rows.forEach((r,i)=>{const el=document.querySelector('[data-out="ms.'+i+'"]');if(el)el.textContent=money(r.amt)});
+  const w=document.querySelector('[data-out="ms.warn"]');if(w)w.textContent=MS.warn;
+  const cv=document.querySelector('[data-out="ms.covered"]');if(cv)cv.textContent=`${t('u.mscovered')} ${money(MS.covered)} ${t('u.msof')} ${money(MS.total)}.`;
+}
+function renderInvoice(){
+  const q=quoteData(), c=S.company;
+  const contact=[c.phone,c.email,c.license].filter(Boolean).map(esc).join(' · ');
+  const groups=q.groups.map(g=>`<div class="qgrp"><div class="qgh"><span>${esc(g.title)}</span><b>${money(g.sub)}</b></div>${g.lines.map(l=>`<div class="ql${l.x?' x':''}"><span class="d">${esc(l.d)}</span><span class="a">${money(l.a)}</span>${l.s?`<span class="s">${esc(l.s)}</span>`:''}</div>`).join('')}</div>`).join('');
+  const ms=MS.rows.map((r,i)=>`<div class="ql"><span class="d">${t('doc.mstone')} ${i+1}: ${esc(r.m.name)}${r.m.due?` — ${esc(r.m.due)}`:''}</span><span class="a">${money(r.amt)}</span><span class="s">${r.isFlat?money(r.v)+' '+t('doc.msflat'):n(r.v)+t('doc.mspct')}</span></div>`).join('');
+  const d=new Date(S.inDate||Date.now());
+  const ymd=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
+  const no=`INV-${ymd}-${String(S.inNo||1).padStart(3,'0')}`;
+  S._invNo=no;
+  return `<article class="qdoc">
+    <div class="qh"><div class="qco"><div class="logo big" style="width:64px;height:64px">${logoHtml()}</div><div><h2>${esc(c.name||'Your Painting Company')}</h2>${contact?`<p>${contact}</p>`:''}</div></div>
+      <div class="qno"><p>${t('doc.inv')}</p><b>${esc(no)}</b><p>${esc(d.toLocaleDateString(LOC(),{year:'numeric',month:'long',day:'numeric'}))}</p></div></div>
+    <div class="qmeta">
+      <div><span>${t('doc.billto')}</span> ${esc(S.client.name||t('doc.customer'))}</div>
+      <div><span>${t('doc.prop')}</span> ${esc(S.client.address||t('doc.noaddr'))}</div>
+      <div><span>${t('doc.room')}</span> ${esc(q.room)}</div>
+      <div><span>${t('doc.paint')}</span> ${esc(q.system)}</div>
+    </div>
+    ${groups}
+    <div class="qgrp"><div class="qgh"><span>${t('doc.ms')}</span><b>${money(MS.covered)}</b></div>${ms||`<p class="hint">${t('doc.nomsset')}</p>`}</div>
+    <div class="qtotal"><span>${t('doc.total')}</span><b>${money(C.total)}</b></div>
+    <p class="qterms">${esc(S.terms)}</p>
+  </article>`;
+}
+function invoiceText(){
+  const q=quoteData(), c=S.company, T=[];
+  T.push(c.name||'Your Painting Company');
+  const contact=[c.phone,c.email,c.license].filter(Boolean).join(' | ');
+  if(contact)T.push(contact);
+  T.push('',`${t('doc.inv')} ${S._invNo||''}`,`${t('doc.billto')}: ${S.client.name||t('doc.customer')}`,`${t('doc.prop')}: ${S.client.address||t('doc.noaddr')}`,'');
+  q.groups.forEach(g=>{
+    T.push(`${g.title.toUpperCase()}  ${money(g.sub)}`);
+    g.lines.forEach(l=>{T.push(`  ${l.x?'+ ':''}${l.d}${l.s?' ('+l.s+')':''}: ${money(l.a)}`)});
+    T.push('');
+  });
+  T.push(t('doc.ms').toUpperCase());
+  MS.rows.forEach((r,i)=>{T.push(`  ${t('doc.mstone')} ${i+1}: ${r.m.name} (${r.isFlat?money(r.v)+' '+t('doc.msflat'):n(r.v)+t('doc.mspct')}${r.m.due?' — '+r.m.due:''}): ${money(r.amt)}`)});
+  T.push('',`${t('doc.total').toUpperCase()}  ${money(C.total)}`,'',S.terms);
+  return T.join('\n');
+}
+
+/* ---------- Word download (opens in Google Docs) ---------- */
+function docHtml(title,no,date,meta,groups,extra){
+  let h=`<h1>${esc(title)}</h1><p><b>${esc(no)}</b> — ${esc(date)}</p><p>${meta}</p>`;
+  groups.forEach(g=>{
+    h+=`<h2>${esc(g.title)} — ${money(g.sub)}</h2><table border="1" cellpadding="6" cellspacing="0">`;
+    g.lines.forEach(l=>{h+=`<tr><td>${esc(l.d)}${l.s?`<br><small>${esc(l.s)}</small>`:''}${l.why?`<br><i>Why: ${esc(l.why)}</i>`:''}</td><td align="right">${money(l.a)}</td></tr>`});
+    h+='</table>';
+  });
+  if(extra)h+=extra;
+  return h;
+}
+/* ---------- real .docx writer (dependency-free OOXML) ---------- */
+function xesc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+/* docHtml() pre-escapes text (&amp; &lt; etc.); decode back before XML-escaping */
+function _hdec(s){return String(s).replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&amp;/g,'&')}
+var _crcT=(()=>{var tb=new Uint32Array(256);for(var n=0;n<256;n++){var c=n;for(var k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);tb[n]=c>>>0}return tb})();
+function _crc32(data){var c=0xFFFFFFFF;for(var i=0;i<data.length;i++)c=_crcT[(c^data[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0}
+function zipStore(files){
+  var enc=new TextEncoder();
+  var parts=[],central=[],off=0,i,j;
+  for(i=0;i<files.length;i++){
+    var f=files[i],nb=enc.encode(f.name),crc=_crc32(f.data),sz=f.data.length;
+    var lh=new Uint8Array(30),dv=new DataView(lh.buffer);
+    dv.setUint32(0,0x04034b50,true);dv.setUint16(4,20,true);dv.setUint16(6,0,true);
+    dv.setUint16(8,0,true);dv.setUint32(10,0,true);dv.setUint32(14,crc,true);
+    dv.setUint32(18,sz,true);dv.setUint32(22,sz,true);
+    dv.setUint16(26,nb.length,true);dv.setUint16(28,0,true);
+    parts.push(lh,nb,f.data);
+    central.push({nb:nb,crc:crc,sz:sz,off:off});off+=30+nb.length+sz;
+  }
+  var cdOff=off;
+  for(j=0;j<central.length;j++){
+    var c=central[j],ch=new Uint8Array(46),d2=new DataView(ch.buffer);
+    d2.setUint32(0,0x02014b50,true);d2.setUint16(4,20,true);d2.setUint16(6,20,true);
+    d2.setUint16(8,0,true);d2.setUint16(10,0,true);d2.setUint32(12,0,true);
+    d2.setUint32(16,c.crc,true);d2.setUint32(20,c.sz,true);d2.setUint32(24,c.sz,true);
+    d2.setUint16(28,c.nb.length,true);d2.setUint16(30,0,true);d2.setUint16(32,0,true);
+    d2.setUint32(42,c.off,true);
+    d2.setUint32(42,c.off,true);
+    parts.push(ch,c.nb);off+=46+c.nb.length;
+  }
+  var cdSz=off-cdOff;
+  var end=new Uint8Array(22),d3=new DataView(end.buffer);
+  d3.setUint32(0,0x06054b50,true);
+  d3.setUint16(8,central.length,true);d3.setUint16(10,central.length,true);
+  d3.setUint32(12,cdSz,true);d3.setUint32(16,cdOff,true);
+  parts.push(end);
+  return new Blob(parts,{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+}
+function _wRun(text,fmt){
+  var rpr='';
+  if(fmt.b)rpr+='<w:b/>';
+  if(fmt.i)rpr+='<w:i/>';
+  if(fmt.sz)rpr+='<w:sz w:val="'+fmt.sz+'"/>';
+  return '<w:r><w:rPr>'+rpr+'</w:rPr><w:t xml:space="preserve">'+xesc(text)+'</w:t></w:r>';
+}
+function _wPara(p){
+  var ppr='';
+  if(p.style)ppr+='<w:pStyle w:val="'+p.style+'"/>';
+  if(p.align)ppr+='<w:jc w:val="'+p.align+'"/>';
+  var runs=p.runs.length?p.runs:[{t:''}];
+  var inner='';
+  for(var i=0;i<runs.length;i++){
+    var r=runs[i];
+    if(r.br)inner+='<w:r><w:br/></w:r>';
+    else inner+=_wRun(r.t,{b:!!r.b,i:!!r.i,sz:r.sz||0});
+  }
+  return '<w:p>'+(ppr?'<w:pPr>'+ppr+'</w:pPr>':'')+inner+'</w:p>';
+}
+function _wTable(rows){
+  var ncols=1,i,ci;
+  for(i=0;i<rows.length;i++)if(rows[i].length>ncols)ncols=rows[i].length;
+  var total=9360,w1=Math.round(total*0.68);
+  var cw=function(idx){return ncols>1?(idx===0?w1:Math.round((total-w1)/(ncols-1))):total};
+  var grid='<w:tblGrid>';
+  for(i=0;i<ncols;i++)grid+='<w:gridCol w:w="'+cw(i)+'"/>';
+  grid+='</w:tblGrid>';
+  var b='<w:tblBorders>'+
+    '<w:top w:val="single" w:sz="6" w:space="0" w:color="999999"/>'+
+    '<w:left w:val="single" w:sz="6" w:space="0" w:color="999999"/>'+
+    '<w:bottom w:val="single" w:sz="6" w:space="0" w:color="999999"/>'+
+    '<w:right w:val="single" w:sz="6" w:space="0" w:color="999999"/>'+
+    '<w:insideH w:val="single" w:sz="6" w:space="0" w:color="999999"/>'+
+    '<w:insideV w:val="single" w:sz="6" w:space="0" w:color="999999"/></w:tblBorders>';
+  var t='<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/>'+b+'</w:tblPr>'+grid;
+  for(i=0;i<rows.length;i++){
+    t+='<w:tr>';
+    for(ci=0;ci<rows[i].length;ci++){
+      var cell=rows[i][ci];
+      t+='<w:tc><w:tcPr><w:tcW w:w="'+cw(ci)+'" w:type="dxa"/></w:tcPr>';
+      var ps=cell.paras.length?cell.paras:[{style:null,align:cell.align,runs:[{t:''}]}];
+      for(var pi=0;pi<ps.length;pi++){if(!ps[pi].align&&cell.align)ps[pi].align=cell.align;t+=_wPara(ps[pi]);}
+      t+='</w:tc>';
+    }
+    t+='</w:tr>';
+  }
+  return t+'</w:tbl>';
+}
+/* Converts the small HTML subset emitted by docHtml() into OOXML blocks.
+   Handles: h1 h2 p table tr td(th) br small i b(em/strong). Unknown tags ignored. */
+function htmlToDocxBody(html){
+  var blocks=[];
+  var para=null,fmt={b:false,i:false,sz:0};
+  var tbl=null,trow=null,tcell=null;
+  var startPara=function(style,align){para={kind:'p',style:style||null,align:align||null,runs:[]};fmt={b:false,i:false,sz:0};};
+  var pushRun=function(t,br){
+    if(!para)startPara(null,null);
+    if(br){para.runs.push({br:true});return;}
+    var last=para.runs[para.runs.length-1];
+    if(last&&!last.br&&last.b===fmt.b&&last.i===fmt.i&&last.sz===fmt.sz)last.t+=t;
+    else para.runs.push({t:t,b:fmt.b,i:fmt.i,sz:fmt.sz});
+  };
+  var endPara=function(){if(para){(tcell?tcell.paras:blocks).push(para);para=null;}};
+  var re=/<\/?[a-zA-Z][a-zA-Z0-9]*(?:\s+[^<>]*)?\/?>|[^<]+/g,m;
+  while((m=re.exec(html))){
+    var tok=m[0];
+    if(tok.charAt(0)!=='<'){pushRun(_hdec(tok));continue;}
+    var isClose=tok.charAt(1)==='/';
+    var nm=tok.replace(/[<>\/]/g,'').split(/\s+/)[0].toLowerCase();
+    if(!isClose){
+      if(nm==='h1'){endPara();startPara('Heading1');}
+      else if(nm==='h2'){endPara();startPara('Heading2');}
+      else if(nm==='p'){endPara();startPara(null);}
+      else if(nm==='b'||nm==='strong'){fmt.b=true;}
+      else if(nm==='i'||nm==='em'){fmt.i=true;}
+      else if(nm==='small'){fmt.sz=18;}
+      else if(nm==='br'){pushRun('',true);}
+      else if(nm==='table'){endPara();tbl={rows:[]};}
+      else if(nm==='tr'){trow=[];if(tbl)tbl.rows.push(trow);}
+      else if(nm==='td'||nm==='th'){tcell={align:/align\s*=\s*["']?right/i.test(tok)?'right':null,paras:[]};if(trow)trow.push(tcell);}
+    }else{
+      if(nm==='h1'||nm==='h2'||nm==='p')endPara();
+      else if(nm==='b'||nm==='strong')fmt.b=false;
+      else if(nm==='i'||nm==='em')fmt.i=false;
+      else if(nm==='small')fmt.sz=0;
+      else if(nm==='td'||nm==='th'){endPara();tcell=null;}
+      else if(nm==='tr')trow=null;
+      else if(nm==='table'){if(tbl)blocks.push({kind:'tbl',rows:tbl.rows});tbl=null;}
+    }
+  }
+  endPara();
+  if(tbl){blocks.push({kind:'tbl',rows:tbl.rows});tbl=null;}
+  var body='';
+  for(var bi=0;bi<blocks.length;bi++){
+    var b=blocks[bi];
+    body+=(b.kind==='tbl')?_wTable(b.rows):_wPara(b);
+  }
+  return body;
+}
+function buildDocx(bodyHtml){
+  var body=htmlToDocxBody(bodyHtml);
+  var doc='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+    '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'+
+    body+
+    '<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/></w:sectPr>'+
+    '</w:body></w:document>';
+  var ct='<?xml version="1.0" encoding="UTF-8"?>'+
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'+
+    '<Default Extension="rels" ContentType="application/vnd.openxml-package.relationships+xml"/>'+
+    '<Default Extension="xml" ContentType="application/xml"/>'+
+    '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'+
+    '</Types>';
+  var rels='<?xml version="1.0" encoding="UTF-8"?>'+
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>'+
+    '</Relationships>';
+  var enc=new TextEncoder();
+  return zipStore([
+    {name:'[Content_Types].xml',data:enc.encode(ct)},
+    {name:'_rels/.rels',data:enc.encode(rels)},
+    {name:'word/document.xml',data:enc.encode(doc)}
+  ]);
+}
+function downloadDoc(filename,bodyHtml){
+  const blob=buildDocx(bodyHtml);
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download=filename;
+  document.body.appendChild(a);a.click();
+  // Give mobile download managers plenty of time to grab the blob before
+  // revoking: revoking too early corrupts the file ("can't open file").
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},60000);
+}
+
+function docHtmlQuote(){
+  const q=quoteData(),c=S.company;
+  const meta=`${esc(c.name||'')}<br>${t('doc.prep')}: ${esc(S.client.name||t('doc.customer'))}<br>${t('doc.prop')}: ${esc(S.client.address||'')}<br>${esc(q.room)}<br>${esc(q.system)}<br>${t('doc.valid')} ${esc(q.until)}`;
+  const extra=`<h2>${t('doc.total').toUpperCase()} — ${money(C.total)}</h2><p>${esc(S.terms)}</p><p>${t('doc.deposit')}: $__________<br>${t('doc.balance')}: $__________</p><p><b>${t('doc.accept')}</b></p><p>${t('doc.sign')}: ______________________________&nbsp;&nbsp;${t('doc.date')}: ____________<br>${t('doc.pname')}: ______________________________</p>`;
+  return docHtml(t('doc.quote'),q.no,q.date,meta,q.groups,extra);
+}
+function docHtmlInvoice(){
+  const q=quoteData(),c=S.company;
+  const meta=`${esc(c.name||'')}<br>${t('doc.billto')}: ${esc(S.client.name||t('doc.customer'))}<br>${t('doc.prop')}: ${esc(S.client.address||'')}<br>${esc(q.room)}`;
+  let extra=`<h2>${t('doc.ms')}</h2><table border="1" cellpadding="6" cellspacing="0">`;
+  MS.rows.forEach((r,i)=>{extra+=`<tr><td>${t('doc.mstone')} ${i+1}: ${esc(r.m.name)}${r.m.due?` — ${esc(r.m.due)}`:''}</td><td align="right">${money(r.amt)}</td></tr>`});
+  extra+=`</table><h2>${t('doc.total').toUpperCase()} — ${money(C.total)}</h2><p>${esc(S.terms)}</p>`;
+  const d=new Date(S.inDate||Date.now());
+  return docHtml(t('doc.inv'),S._invNo||'INV',d.toLocaleDateString(LOC(),{year:'numeric',month:'long',day:'numeric'}),meta,q.groups,extra);
+}
+
+/* ---------- update (recompute, then sync the page) ---------- */
+const LOGO='<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="6" y="7" width="30" height="13" rx="3" fill="#F0BE2B" stroke="currentColor" stroke-width="2.5"/><path d="M36 13.5h5a2 2 0 0 1 2 2V24a2 2 0 0 1-2 2H24v6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="20.5" y="32" width="7" height="11" rx="2" fill="currentColor"/></svg>';
+let logoKey=null;
+const hint=(over,defTxt,defVal,unit)=>over==null?`${defTxt}. ${t('u.typnum')}`:`${t('u.edited')} ${n(defVal)} ${unitName(unit)}. ${t('u.useit')}`;
+function cond(expr){
+  let neg=false;
+  if(expr[0]==='!'){neg=true;expr=expr.slice(1)}
+  let r;const m=expr.match(/^(.+?)(!=|=)(.+)$/);
+  if(m){const v=String(getDisp(m[1]));r=m[2]==='='?v===m[3]:v!==m[3]}
+  else r=!!getDisp(expr);
+  return neg?!r:r;
+}
+function fmtNum(v,k){
+  if(k.startsWith('rate:')||/\.(rate|cost)$/.test(k))return Number(v).toFixed(2);
+  return String(Math.round(v*100)/100);
+}
+function update(){
+  C=calc();
+  const O={}, r=S.room, zi=zipInfo(S.zip);
+  const sq=t('unit.sqft'), ft=t('unit.ft');
+  const pl=(c,one,many)=>c+' '+(c===1?one:many);
+  O['total']=money(C.total);
+  O['company.name']=S.company.name||'Your Painting Company';
+  O['zip.name']=zi.known?`${zi.name}. ${t('u.ziplocal')} ${zi.m.toFixed(2)} ${t('u.ziptimes')}`:zi.name;
+  O['calc.perim']=`(${n(r.l)} + ${n(r.w)}) × 2 = ${n(C.perim)} ${ft}`;
+  O['calc.gross']=`${n(C.perim)} × ${n(r.h)} = ${n(C.gross)} ${sq}`;
+  O['calc.doors']=`− ${n(C.dA)} ${sq} (${pl(S.doors.length,t('u.door1'),t('u.doors'))})`;
+  O['calc.wins']=`− ${n(C.wA)} ${sq} (${pl(S.windows.length,t('u.win1'),t('u.wins'))})`;
+  O['calc.net']=`= ${n(C.netWall)} ${sq}`;
+  O['calc.ceil']=`${n(r.l)} × ${n(r.w)} = ${n(C.ceilA)} ${sq}`;
+  Object.keys(COATS).forEach(k=>{O['coat.'+k]=`${t('coat.walls')} ${money(rate(k+'.walls'))}${t('coat.persqft')} · ${t('coat.ceiling')} ${money(rate(k+'.ceiling'))}${t('coat.persqft')} · ${t('coat.trim')} ${money(rate(k+'.casing'))}${t('coat.perlnft')}`});
+  O['walls.total']=money(C.walls.total); O['walls.base']=money(C.walls.base);
+  O['walls.hint']=hint(S.walls.area,`${t('u.wallsh')} ${n(C.gross)} ${t('u.wallsof')} ${n(C.dA+C.wA)} ${t('u.wallsdw')}`,C.netWall,'sq ft');
+  O['ceiling.total']=money(C.ceiling.total); O['ceiling.base']=money(C.ceiling.base);
+  O['ceiling.hint']=hint(S.ceiling.area,`${t('u.ceilh')} ${n(r.l)} × ${n(r.w)} ${ft}`,C.ceilA,'sq ft');
+  [['crown',t('u.trimperim'),C.perim],['casing',t('u.trimcasing'),C.casingLen],['base',t('u.trimbase'),C.baseLen]].forEach(([k,desc,v])=>{
+    O['trim.'+k+'.total']=money(C[k].total); O['trim.'+k+'.base']=money(C[k].base);
+    O['trim.'+k+'.hint']=hint(S.trim[k].len,`${t('u.trimcalc')} ${desc} = ${n(v)} ${t('unit.lnft')}`,v,'ln ft');
+  });
+  O['trim.total']=money(C.trimTotal); O['doors.total']=money(C.doorsTotal); O['windows.total']=money(C.windowsTotal);
+  O['trim.minadj']=C.trimMinAdj>0?`${t('u.trimmin')}: +${money(C.trimMinAdj)}`:'';
+  O['others.total']=money(C.othersTotal); O['mat.total']=money(C.matTotal);
+  C.doors.forEach((e,i)=>{O['d:doors.'+i]=`${n(e.d.w)}′ × ${n(e.d.h)}′ = ${n(e.area)} ${sq}`});
+  C.windows.forEach((e,i)=>{O['d:windows.'+i]=`${n(e.d.w)}′ × ${n(e.d.h)}′ = ${n(e.area)} ${sq}`});
+  O['sum.room']=`${t('u.sumroom')} ${n(r.l)}′ × ${n(r.w)}′ × ${n(r.h)}′, ${n(C.netWall)} ${t('u.sumof')}`;
+  O['sum.walls']=money(C.walls.total); O['sum.ceiling']=money(C.ceiling.total); O['sum.doors']=money(C.doorsTotal);
+  O['sum.windows']=money(C.windowsTotal); O['sum.trim']=money(C.trimTotal); O['sum.others']=money(C.othersTotal); O['sum.materials']=money(C.matTotal);
+  O['sum.extras']=C.extrasTotal>0?`${t('u.sumextras')} ${money(C.extrasTotal)} ${t('u.sumextras2')}`:t('u.noextras');
+
+  document.querySelectorAll('[data-k]').forEach(el=>{
+    if(el===document.activeElement)return;
+    const k=el.dataset.k, v=getDisp(k);
+    if(el.type==='checkbox')el.checked=!!v;
+    else if(el.type==='radio')el.checked=String(v)===el.value;
+    else if(el.type==='number')el.value=(v==null)?'':fmtNum(v,k);
+    else el.value=(v==null)?'':String(v);
+  });
+  document.querySelectorAll('[data-out]').forEach(el=>{
+    const k=el.dataset.out;
+    const t=k.startsWith('x:')?money(C.x[k.slice(2)]||0):(O[k]!=null?O[k]:'');
+    if(el.textContent!==t)el.textContent=t;
+  });
+  document.querySelectorAll('[data-showif]').forEach(el=>{el.hidden=!cond(el.dataset.showif)});
+  document.querySelectorAll('[data-dim]').forEach(el=>{el.classList.toggle('off',!cond(el.dataset.dim))});
+  const lk=S.company.logo||'-';
+  if(lk!==logoKey){logoKey=lk;document.querySelectorAll('[data-logo]').forEach(el=>{el.innerHTML=logoHtml()})}
+  if(S.quoteOn)$('#qdoc').innerHTML=renderQuote();
+  syncMs();
+  if(S.invoiceOn)$('#invdoc').innerHTML=renderInvoice();
+  save();
+}
+
+/* ---------- events ---------- */
+function setFromEl(el,k){
+  let v;
+  if(el.type==='checkbox')v=el.checked;
+  else if(el.type==='radio'){if(!el.checked)return;v=el.value}
+  else if(el.type==='number'){
+    const s=el.value;
+    if(s==='')v=el.hasAttribute('data-nullable')?null:0;
+    else{v=parseFloat(s);if(!isFinite(v)||v<0)v=0}
+  }
+  else if(el.hasAttribute('data-int'))v=parseInt(el.value,10);
+  else v=el.value;
+  if(k==='base.trimFull'){['full.crown','full.casing','full.base'].forEach(kk=>{S.base[kk]=v});update();return}
+  if(k==='base.trimSpot'){['spot.crown','spot.casing','spot.base'].forEach(kk=>{S.base[kk]=v});update();return}
+  if(k.startsWith('rate:')){
+    const key=rkey(k.slice(5));
+    if(v==null)delete S.overrides[key];else S.overrides[key]=v;
+    return;
+  }
+  setP(k,v);
+  if(el.dataset.size){
+    const row=getP(el.dataset.size), list=SIZES[el.dataset.size.split('.')[0]];
+    const s=list.find(x=>x[0]===row.type);
+    if(s&&s[1]){row.w=s[1];row.h=s[2]}
+  }
+}
+function addExtra(sel){
+  const path=sel.dataset.addx, key=sel.value;
+  if(!key)return;
+  const pr=PRESETS[key];
+  const qty=(pr.unit==='flat'||pr.unit==='hr')?1:r2(C.q[path]||0);
+  getP(path+'.extras').push({key,label:pr.label,unit:pr.unit,qty,rate:null,note:''});
+  render();update();
+}
+function onField(e){
+  const el=e.target;
+  if(el.dataset&&el.dataset.addx!==undefined){if(e.type==='change')addExtra(el);return}
+  const k=el.dataset&&el.dataset.k;
+  if(!k)return;
+  setFromEl(el,k);
+  update();
+}
+document.addEventListener('input',onField);
+document.addEventListener('change',onField);
+document.addEventListener('focusout',()=>{setTimeout(update,0)});
+
+const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const ACT={
+  start(){$('#landing').hidden=true;$('#app').hidden=false;window.scrollTo(0,0);update()},
+  home(){$('#app').hidden=true;$('#landing').hidden=false;window.scrollTo(0,0)},
+  rmLogo(){S.company.logo='';update()},
+  resetPrices(){S.overrides={};update()},
+  addDoor(){S.doors.push(mkDoor());render();update()},
+  addWindow(){S.windows.push(mkWin());render();update()},
+  addOther(){S.others.push(mkOther());render();update()},
+  addMaterial(){S.materials.push(mkMat());render();update()},
+  quote(){
+    if(!S.quoteOn){S.qn=(S.qn||0)+1;S.qdate=Date.now();S.quoteOn=true}
+    $('#quote').hidden=false;update();
+    $('#quote').scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'});
+  },
+  copyQuote(){
+    const text=quoteText(), btn=$('#copyBtn'), ta=$('#qtext');
+    const done=()=>{btn.textContent=t('q.copied');setTimeout(()=>{btn.textContent=t('q.copy')},1800)};
+    const fallback=()=>{ta.hidden=false;ta.value=text;ta.focus();ta.select();btn.textContent=t('q.copyfb');setTimeout(()=>{btn.textContent=t('q.copy')},3500)};
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,fallback)}else fallback();
+  },
+  downloadQuote(){downloadDoc('quote-'+quoteData().no+'.docx',docHtmlQuote())},
+  invoice(){
+    if(!S.invoiceOn){S.inNo=(S.inNo||0)+1;S.inDate=Date.now();S.invoiceOn=true}
+    $('#invoice').hidden=false;update();
+    $('#invoice').scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'});
+  },
+  addMilestone(){S.milestones.push({name:t('ms.new'),mode:'%',value:0,due:''});update()},
+  copyInvoice(){
+    const text=invoiceText(), btn=$('#copyInvBtn'), ta=$('#invtext');
+    const done=()=>{btn.textContent=t('i.copied');setTimeout(()=>{btn.textContent=t('i.copy')},1800)};
+    const fallback=()=>{ta.hidden=false;ta.value=text;ta.focus();ta.select();btn.textContent=t('i.copyfb');setTimeout(()=>{btn.textContent=t('i.copy')},3500)};
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,fallback)}else fallback();
+  },
+  downloadInvoice(){downloadDoc('invoice-'+(S._invNo||'invoice')+'.docx',docHtmlInvoice())},
+  autoMaterials(){
+    if(!C)return;
+    const cov=350, coats=2;
+    const wallSq=C.netWall, ceilSq=S.ceiling.on?C.ceilA:0;
+    const upsert=(name,qty,unit,cost)=>{
+      const f=S.materials.find(m=>m.name.toLowerCase()===name.toLowerCase());
+      if(f){f.qty=qty}else{S.materials.unshift({name,qty,unit,cost})}
+    };
+    upsert('Wall paint',Math.max(1,Math.ceil(wallSq/cov*coats)),'gallon',42);
+    if(ceilSq>0)upsert('Ceiling paint',Math.max(1,Math.ceil(ceilSq/cov*coats)),'gallon',36);
+    upsert('Primer',Math.max(1,S.coating==='full'?Math.ceil((wallSq+ceilSq)/cov):Math.ceil((wallSq+ceilSq)/cov*0.3)),'gallon',30);
+    upsert('Trim and door paint',1,'gallon',52);
+    render();update();
+  }
+};
+document.addEventListener('click',e=>{
+  const lg=e.target.closest('[data-lang]');
+  if(lg){setLang(lg.dataset.lang);return}
+  const rmm=e.target.closest('[data-rmms]');
+  if(rmm){S.milestones.splice(+rmm.dataset.rmms,1);update();return}
+  const rm=e.target.closest('[data-rm]');
+  if(rm){
+    const a=rm.dataset.rm.split('.'), idx=+a.pop();
+    getP(a.join('.')).splice(idx,1);
+    render();update();return;
+  }
+  const b=e.target.closest('[data-act]');
+  if(b&&ACT[b.dataset.act])ACT[b.dataset.act]();
+});
+$('#logoFile').addEventListener('change',e=>{
+  const f=e.target.files&&e.target.files[0];
+  if(!f)return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    const img=new Image();
+    img.onload=()=>{
+      const sc=Math.min(1,320/Math.max(img.width,img.height,1));
+      const c=document.createElement('canvas');
+      c.width=Math.max(1,Math.round(img.width*sc));c.height=Math.max(1,Math.round(img.height*sc));
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      S.company.logo=c.toDataURL('image/png');
+      update();
+    };
+    img.src=rd.result;
+  };
+  rd.readAsDataURL(f);
+});
+
+/* ---------- start ---------- */
+load();
+render();
+applyI18n();
+update();
+})();
+</script>

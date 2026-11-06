@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BestQuoteTool — Painting & Carpentry Estimators for Contractors</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* BestQuoteTool landing — design v1 (Franklin to direct fixes).
+   Palette matches the estimators: shop-floor paper, ink, masking-tape yellow.
+   Background: warm paper with a faint graph-paper grid, like an estimator's pad. */
+:root{
+  --display:'Bricolage Grotesque','Avenir Next','Segoe UI',system-ui,sans-serif;
+  --body:'IBM Plex Sans',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --paper:#f6f1e6;
+  --ink:#1d1a14;
+  --tape:#f2c230;
+  --card:#fffdf7;
+  --line:#ddd3bd;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:var(--body);
+  color:var(--ink);
+  background-color:var(--paper);
+  background-image:
+    linear-gradient(rgba(29,26,20,.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(29,26,20,.055) 1px, transparent 1px),
+    linear-gradient(rgba(29,26,20,.10) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(29,26,20,.10) 1px, transparent 1px);
+  background-size:24px 24px, 24px 24px, 120px 120px, 120px 120px;
+  background-position:center top;
+}
+.wrap{max-width:1020px;margin:0 auto;padding:0 20px 64px}
+header{padding:56px 0 8px;text-align:left}
+.kicker{font-family:var(--mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;background:var(--tape);display:inline-block;padding:4px 10px;border:2px solid var(--ink);box-shadow:3px 3px 0 var(--ink)}
+h1{font-family:var(--display);font-size:clamp(40px,7vw,68px);line-height:.98;margin:18px 0 10px}
+.sub{font-size:clamp(17px,2.4vw,21px);max-width:640px;margin:0 0 8px}
+.price-line{font-family:var(--mono);font-size:15px;margin:14px 0 0}
+.price-line strong{background:var(--ink);color:var(--paper);padding:2px 8px}
+.tools{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:38px 0 8px}
+@media (max-width:720px){.tools{grid-template-columns:1fr}}
+.tool{background:var(--card);border:2px solid var(--ink);box-shadow:5px 5px 0 var(--ink);padding:24px}
+.tool h2{font-family:var(--display);font-size:27px;margin:0 0 8px}
+.tool p{margin:0 0 18px;font-size:16px}
+.btn{display:inline-block;font-family:var(--display);font-weight:700;font-size:17px;color:var(--ink);background:var(--tape);border:2px solid var(--ink);padding:12px 20px;text-decoration:none;box-shadow:3px 3px 0 var(--ink)}
+.btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+.btn.dark{background:var(--ink);color:var(--paper)}
+section.why{margin:44px 0 0;background:var(--card);border:2px solid var(--ink);box-shadow:5px 5px 0 var(--ink);padding:24px}
+section.why h2{font-family:var(--display);font-size:27px;margin:0 0 12px}
+section.why ul{margin:0;padding-left:20px;font-size:16px;line-height:1.65}
+.subscribe{margin:44px 0 0;text-align:center;background:var(--ink);color:var(--paper);padding:36px 24px;border:2px solid var(--ink)}
+.subscribe h2{font-family:var(--display);font-size:32px;margin:0 0 8px;color:var(--paper)}
+.subscribe p{margin:0 0 20px;font-size:16px}
+.subscribe .btn{box-shadow:3px 3px 0 rgba(246,241,230,.85)}
+footer{margin:34px 0 0;font-family:var(--mono);font-size:13px;text-align:center;opacity:.75}
+.note{font-size:13px;font-family:var(--mono);margin-top:12px;opacity:.8}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="kicker">For painting &amp; carpentry contractors</span>
+    <h1>BestQuoteTool</h1>
+    <p class="sub">Two working estimators built from 23+ years in the trade. Measure the job, price it with your own rates, and download a clean estimate your client can sign — right from your phone.</p>
+    <p class="price-line"><strong>$15/month</strong> &nbsp;Unlimited documents &nbsp;·&nbsp; 14-day free trial &nbsp;·&nbsp; English &amp; Spanish</p>
+  </header>
+
+  <div class="tools">
+    <div class="tool">
+      <h2>Painting Estimator</h2>
+      <p>Walls, ceilings, trim, doors, windows and radiators — priced by the square foot and the piece, with prep and coats built in.</p>
+      <a class="btn" href="painting.html">Open the Painting Estimator</a>
+    </div>
+    <div class="tool">
+      <h2>Carpentry &amp; Task Estimator</h2>
+      <p>Trim packages, doors, built-ins and the small tasks that ride along on every job — priced the way a carpenter actually charges.</p>
+      <a class="btn" href="carpentry.html">Open the Carpentry Estimator</a>
+    </div>
+  </div>
+
+  <section class="why">
+    <h2>Built different, on purpose</h2>
+    <ul>
+      <li><strong>Your rates win.</strong> Set your own rate card — the tool does the math, you keep the pricing judgment.</li>
+      <li><strong>No AI.</strong> Your photos, your measurements, your numbers. Nothing invented.</li>
+      <li><strong>Download-only documents.</strong> The estimate is yours — send it from your own company email.</li>
+      <li><strong>Deposit line and a client signature block</strong> on every estimate, so the job can start the right way.</li>
+      <li><strong>Teaching notes under every section</strong>, written from real trade practice.</li>
+    </ul>
+  </section>
+
+  <div class="subscribe" id="subscribe">
+    <h2>Start your 14-day free trial</h2>
+    <p>$15/month after the trial. Unlimited documents. Cancel anytime.</p>
+    <!-- STRIPE SLOT: replace the href below with the Stripe Payment Link once Stripe is connected.
+         Product: BestQuoteTool — $15.00/month recurring, 14-day trial. -->
+    <a class="btn" id="subscribe-btn" href="#">Subscribe — $15/month</a>
+    <p class="note">Secure checkout by Stripe.</p>
+  </div>
+
+  <footer>BestQuoteTool · Estimates are editable templates for reference, not contracts or advice.</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,1412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Carpentry &amp; Task Estimator</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+
+/* Layout: a working estimate on the left (one block per surface), a sticky cost summary on the right.
+   Palette: shop-floor paper, ink, masking-tape yellow used only for the start button and the total. */
+:root{
+  --display:'Bricolage Grotesque','Avenir Next','Segoe UI',system-ui,sans-serif;
+  --body:'IBM Plex Sans','Segoe UI',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+  --bg:#F1F2EE; --surface:#FFFFFF; --surface2:#E8EBE5; --ink:#16262B; --muted:#57686D; --line:#D3D9D0;
+  --accent:#1B6785; --on-accent:#FFFFFF; --tape:#F0BE2B; --on-tape:#241D05; --danger:#B03636;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B1114; --surface:#151F25; --surface2:#1C2A31; --ink:#E9F1EF; --muted:#93A7AC; --line:#2B3B41;
+    --accent:#7FD4FF; --on-accent:#05202A; --danger:#EE8A8A; color-scheme:dark;
+  }
+  :root:not([data-theme="light"]) body{
+    background:
+      radial-gradient(1000px 480px at 85% -6%, rgba(127,212,255,.10), transparent 60%),
+      radial-gradient(760px 420px at 6% 2%, rgba(240,190,43,.05), transparent 60%),
+      var(--bg);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0B1114; --surface:#151F25; --surface2:#1C2A31; --ink:#E9F1EF; --muted:#93A7AC; --line:#2B3B41;
+  --accent:#7FD4FF; --on-accent:#05202A; --danger:#EE8A8A; color-scheme:dark;
+}
+:root[data-theme="dark"] body{
+  background:
+    radial-gradient(1000px 480px at 85% -6%, rgba(127,212,255,.10), transparent 60%),
+    radial-gradient(760px 420px at 6% 2%, rgba(240,190,43,.05), transparent 60%),
+    var(--bg);
+}
+*,*::before,*::after{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 var(--body)}
+h1,h2,h3,h4{margin:0;font-family:var(--display);font-weight:700;letter-spacing:-.01em;text-wrap:balance}
+h2{font-size:19px}
+h3{font-size:12px;font-family:var(--body);font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:20px 0 8px;display:flex;align-items:center;gap:8px}
+h3::before{content:'';width:4px;height:14px;border-radius:2px;background:var(--tape);flex:none}
+h4{font-size:12px;font-family:var(--body);font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:0 0 8px}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+p{margin:0}
+
+/* shared gutter */
+.wrap{max-width:1120px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:18px 56px}
+
+/* header */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb, var(--bg) 86%, transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.top-in{max-width:1120px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px))}
+.brand{display:flex;align-items:center;gap:10px;background:none;border:0;color:var(--ink);padding:0;min-width:0;text-align:left}
+.bn{font-family:var(--display);font-weight:700;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.logo{width:36px;height:36px;display:grid;place-items:center;flex:none;color:var(--ink)}
+.logo svg,.logo img{width:100%;height:100%;object-fit:contain}
+.logo.big{width:96px;height:96px}
+.tot{text-align:right;flex:none}
+.tot span{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.tot b{font-family:var(--mono);font-size:24px;font-weight:600;letter-spacing:-.01em;background:linear-gradient(transparent 60%,var(--tape) 60%,var(--tape) 94%,transparent 94%);padding:0 4px}
+.langseg{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;flex:none}
+.langseg button{background:transparent;border:0;color:var(--muted);padding:7px 13px;font-weight:700;font-size:13px;letter-spacing:.04em}
+.langseg button.on{background:var(--accent);color:var(--on-accent)}
+
+/* landing */
+.land{max-width:960px;margin:0 auto;padding-block:40px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:28px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:820px){.land{grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);align-items:start;gap:48px;padding-top:72px}}
+.land h1{font-size:clamp(32px,6vw,48px);line-height:1.05;margin:18px 0 12px;overflow-wrap:anywhere}
+.lead{color:var(--muted);max-width:44ch;margin-bottom:24px;font-size:16px}
+.start{background:linear-gradient(135deg,var(--tape),color-mix(in srgb, var(--tape) 78%, #7a5b00));color:var(--on-tape);border:0;border-radius:10px;padding:15px 32px;font-family:var(--display);font-weight:700;font-size:18px;box-shadow:0 8px 22px rgba(240,190,43,.28),0 3px 0 rgba(0,0,0,.28);transition:transform .12s,box-shadow .15s}
+.start:hover{transform:translateY(-1px)}
+.start:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.28)}
+
+/* layout */
+.layout{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+@media (min-width:960px){
+  .layout{grid-template-columns:minmax(0,1fr) 320px;align-items:start}
+  .summary{position:sticky;top:calc(env(safe-area-inset-top,0px) + 76px)}
+}
+#c-body{display:flex;flex-direction:column;gap:14px;min-width:0}
+
+/* blocks */
+.blk,.sbox{background:linear-gradient(180deg,color-mix(in srgb, var(--surface) 96%, #fff),var(--surface));border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 10px 28px rgba(0,0,0,.22)}
+.blk.off .bb{opacity:.45}
+.bh{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.bh:last-child{margin-bottom:0}
+.sum{font-family:var(--mono);font-weight:500}
+.bb{min-width:0}
+.item{border-top:1px solid var(--line);padding-top:14px;margin-top:14px}
+.item:first-of-type{margin-top:0}
+.ih{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.ih small{color:var(--muted);font-weight:400}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;align-items:end;margin-bottom:10px;min-width:0}
+.row>*{min-width:0}
+.f{display:block;min-width:0}
+.f>span{display:block;font-size:12px;color:var(--muted);margin-bottom:3px}
+.in{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;font-size:16px;min-width:0;transition:border-color .15s,box-shadow .15s}
+.in:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 28%, transparent);outline:none}
+.in.n,input[type=number].in{font-family:var(--mono);text-align:right}
+select.in{padding-right:4px}
+textarea.in{resize:vertical;min-height:84px;line-height:1.4}
+.amt{display:block;font-family:var(--mono);font-weight:500;padding:8px 0}
+.hint{font-size:13px;color:var(--muted);margin:2px 0 10px}
+.bh .chk{margin-bottom:0}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:10px 16px;border-radius:10px;font-weight:600;transition:transform .12s,box-shadow .15s,filter .15s}
+.btn:hover{filter:brightness(1.07)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:linear-gradient(135deg,var(--accent),color-mix(in srgb, var(--accent) 72%, #0a4a63));color:var(--on-accent);border-color:transparent;box-shadow:0 6px 18px color-mix(in srgb, var(--accent) 35%, transparent)}
+.btn.small{padding:6px 10px;font-size:13px}
+.btn.wide{width:100%}
+.rm{border:1px solid var(--line);background:transparent;color:var(--muted);width:32px;height:32px;border-radius:8px;font-size:18px;line-height:1;flex:none}
+.rm:hover{color:var(--danger);border-color:var(--danger)}
+
+/* extras */
+.extras{margin-top:6px;padding-top:12px;border-top:1px dashed var(--line)}
+.xrow{background:var(--surface2);border-radius:8px;padding:10px;margin-bottom:10px}
+.xhead{display:flex;gap:8px;margin-bottom:8px}
+.xhead .in{font-weight:600}
+
+/* room calc */
+
+/* coating choice */
+
+/* summary */
+.sbox h2{margin-bottom:10px}
+.sl{margin:0;display:grid;gap:6px}
+.sl div{display:flex;justify-content:space-between;gap:12px}
+.sl dt{color:var(--muted)}
+.sl dd{margin:0;font-family:var(--mono)}
+.stotal{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:14px 0 8px;padding-top:12px;border-top:2px solid var(--ink)}
+.stotal span{font-weight:600}
+.stotal b{font-family:var(--mono);font-size:24px;font-weight:500;background:linear-gradient(transparent 62%,var(--tape) 62%,var(--tape) 92%,transparent 92%);padding:0 2px}
+.sbox .btn{margin-top:10px}
+
+/* quote document */
+.qtools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;max-width:820px;margin:0 auto 12px}
+.qtools .hint{margin:0}
+.qdoc{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:clamp(16px,4vw,36px);max-width:820px;margin:0 auto}
+.qh{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;border-bottom:2px solid var(--ink);padding-bottom:14px}
+.qco{display:flex;gap:12px;align-items:center;min-width:0}
+.qco h2{font-size:22px;overflow-wrap:anywhere}
+.qco p,.qno p{font-size:13px;color:var(--muted)}
+.qno{text-align:right}
+.qno b{font-family:var(--mono);font-weight:500}
+.qmeta{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:6px 20px;margin:14px 0 4px;font-size:14px}
+.qmeta span{color:var(--muted)}
+.qgrp{margin-top:20px}
+.qgh{display:flex;justify-content:space-between;gap:12px;font-family:var(--display);font-weight:700;border-bottom:1px solid var(--ink);padding-bottom:4px}
+.qgh b{font-family:var(--mono);font-weight:500}
+.ql{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1px 14px;padding:8px 0;border-bottom:1px dotted var(--line)}
+.ql .a{font-family:var(--mono);text-align:right}
+.ql .s{grid-column:1;color:var(--muted);font-size:13px}
+.ql .why{grid-column:1;font-size:13px;font-style:italic}
+.ql.x .d::before{content:'+ ';color:var(--accent);font-weight:700}
+.qtotal{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-top:20px;padding:14px 0;border-top:2px solid var(--ink);border-bottom:2px solid var(--ink)}
+.qtotal span{font-family:var(--display);font-weight:700;font-size:20px}
+.qtotal b{font-family:var(--mono);font-weight:500;font-size:26px}
+.qterms{margin-top:14px;font-size:13px;color:var(--muted);white-space:pre-wrap}
+.qdep{display:flex;justify-content:space-between;gap:12px;margin-top:12px;font-size:15px}
+.qsign{margin-top:30px;font-size:14px}
+.qsign p{margin:0 0 12px}
+.qsign .line{border-bottom:1px solid var(--ink);display:inline-block;min-width:260px}
+
+/* carpentry module (v8) */
+.cthumb{max-width:220px;max-height:170px;border-radius:8px;border:1px solid var(--line);display:block;margin-bottom:10px}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.pgrid .blk{margin-bottom:0}
+.pthumb{max-width:110px;max-height:84px;border-radius:6px;border:1px solid var(--line);flex:none}
+.tchip{display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--line);border-radius:999px;padding:4px 6px 4px 12px;font-size:13px;font-weight:600}
+.paidstamp{display:inline-block;margin-top:14px;padding:10px 22px;border:3px solid var(--accent);border-radius:10px;font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:.06em;color:var(--accent);transform:rotate(-4deg)}
+#printArea{display:none}
+@media print{
+  /* Force a light document theme when printing: in dark mode the app uses
+     light text on dark surfaces, and printers drop backgrounds by default,
+     which would render light-on-white (a "blank" page). */
+  :root{
+    --bg:#FFFFFF !important;
+    --surface:#FFFFFF !important;
+    --surface2:#F2F4F1 !important;
+    --ink:#16262B !important;
+    --muted:#4A5A5F !important;
+    --line:#C9D1CB !important;
+    --accent:#1B6785 !important;
+    --on-accent:#FFFFFF !important;
+    --tape:#F0BE2B !important;
+    --on-tape:#241D05 !important;
+    --danger:#B03636 !important;
+    color-scheme:light !important;
+  }
+  body{background:#FFFFFF !important;}
+  body.printing #landing,body.printing #app{display:none!important}
+  body.printing #printArea{display:block!important}
+  #printArea .qdoc{box-shadow:none;border:0;max-width:none}
+}
+
+</style>
+</head>
+<body>
+<div id="landing" class="land">
+  <div>
+    <div class="logo big" data-logo></div>
+    <h1 data-cname></h1>
+    <p class="lead" data-i18n="app.lead">Price trim, doors, built-ins and any handyman task. Set your own rates, track measurements, attach site photos or sketches, and hand the client a clean estimate, invoice and receipt.</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <button class="start" type="button" data-cact="startCarp" data-i18n="c.start">Start estimate</button>
+    </div>
+  </div>
+  <section class="blk">
+    <div class="bh"><h2 data-i18n="app.company">Your company</h2></div>
+    <label class="f" style="margin-bottom:10px"><span data-i18n="app.cname">Company name</span><input class="in" type="text" data-cck="name" autocomplete="organization"></label>
+    <div class="row">
+      <label class="f"><span data-i18n="app.phone">Phone</span><input class="in" type="text" data-cck="phone" autocomplete="tel"></label>
+      <label class="f"><span data-i18n="app.email">Email</span><input class="in" type="text" data-cck="email" autocomplete="email"></label>
+    </div>
+    <label class="f" style="margin-bottom:10px"><span data-i18n="app.license">License number</span><input class="in" type="text" data-cck="license"></label>
+    <div class="f"><span data-i18n="app.logo">Logo</span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <input id="logoFile" class="in" type="file" accept="image/*" style="max-width:260px">
+        <button class="btn small" type="button" data-cact="rmLogo" data-i18n="app.rmlogo">Remove logo</button>
+      </div>
+    </div>
+    <p class="hint" style="margin-top:10px" data-i18n="app.remember">These details appear on every document and are remembered in this browser.</p>
+  </section>
+</div>
+
+<div id="app" hidden>
+  <header class="top"><div class="top-in">
+    <button class="brand" type="button" data-cact="home" data-i18n-aria="a.home" aria-label="Company details"><span class="logo" data-logo></span><span class="bn" data-cname></span></button>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="langseg" role="group" aria-label="Language / Idioma"><button type="button" data-lang="en">EN</button><button type="button" data-lang="es">ES</button></div>
+      <div class="tot"><span data-i18n="hdr.estimate">Estimate</span><b data-cout="total"></b></div>
+    </div>
+  </div></header>
+  <div class="wrap">
+    <div class="layout">
+      <main id="c-body"></main>
+<aside class="summary" id="c-summary"><div class="sbox">
+        <h2 data-i18n="c.sum.title">Cost summary</h2>
+        <dl class="sl">
+          <div><dt data-i18n="c.sum.trim">Trim installation</dt><dd data-cout="sum.trim"></dd></div>
+          <div><dt data-i18n="c.sum.doors">Door installation</dt><dd data-cout="sum.doors"></dd></div>
+          <div><dt data-i18n="c.sum.builtins">Built-ins</dt><dd data-cout="sum.builtins"></dd></div>
+          <div><dt data-i18n="c.sum.custom">Custom work</dt><dd data-cout="sum.custom"></dd></div>
+          <div><dt data-i18n="c.sum.tasks">Tasks</dt><dd data-cout="sum.tasks"></dd></div>
+          <div><dt data-i18n="c.sum.materials">Materials</dt><dd data-cout="sum.materials"></dd></div>
+        </dl>
+        <div class="stotal"><span data-i18n="c.sum.total">Total estimate</span><b data-cout="total"></b></div>
+        <button class="btn primary wide" type="button" data-cact="estimate" data-i18n="c.act.estimate">Generate estimate</button>
+        <button class="btn primary wide" type="button" data-cact="invoice" data-i18n="c.act.invoice">Generate invoice</button>
+        <button class="btn primary wide" type="button" data-cact="receipt" data-i18n="c.act.receipt">Generate receipt</button>
+      </div></aside>
+    </div>
+<section id="c-estimate" hidden>
+      <div class="qtools">
+        <button class="btn" type="button" data-cact="backEst" data-i18n="c.tools.back">← Back</button>
+        <button class="btn primary" type="button" data-cact="copyDoc" data-doc="est" id="cCopyEstBtn" data-i18n="c.tools.copy">Copy text</button>
+        <button class="btn" type="button" data-cact="dlEst" data-i18n="c.tools.word">Download Word</button>
+        <button class="btn" type="button" data-cact="printEst" data-i18n="c.tools.print">Print</button>
+        <button class="btn" type="button" data-cact="resetEst" data-i18n="c.tools.reset">Reset</button>
+        <button class="btn primary" type="button" data-cact="toInvoice" data-i18n="c.act.invoice">Generate invoice</button>
+        <span class="hint" data-i18n="c.tools.hint"></span>
+      </div>
+      <div id="c-estimatedoc"></div>
+    </section>
+    <section id="c-invoice" hidden>
+      <div class="qtools">
+        <button class="btn" type="button" data-cact="backInv" data-i18n="c.tools.back">← Back</button>
+        <button class="btn primary" type="button" data-cact="copyDoc" data-doc="inv" id="cCopyInvBtn" data-i18n="c.tools.copy">Copy text</button>
+        <button class="btn" type="button" data-cact="dlInv" data-i18n="c.tools.word">Download Word</button>
+        <button class="btn" type="button" data-cact="printInv" data-i18n="c.tools.print">Print</button>
+        <button class="btn" type="button" data-cact="resetInv" data-i18n="c.tools.reset">Reset</button>
+        <button class="btn primary" type="button" data-cact="toReceipt" data-i18n="c.act.receipt">Generate receipt</button>
+        <span class="hint" data-i18n="c.tools.hint"></span>
+      </div>
+      <div class="blk" style="max-width:820px;margin:0 auto 12px">
+        <div class="bh"><h2 data-i18n="ms.title">Payment milestones</h2><button class="btn small" type="button" data-cact="addMs" data-i18n="ms.add">+ Add milestone</button></div>
+        <div class="bb"><div id="c-msList"></div>
+        <p class="hint" data-cout="c.msCovered"></p>
+        <p class="hint" data-cout="c.msWarn" style="color:var(--danger)"></p></div>
+      </div>
+      <div id="c-invdoc"></div>
+    </section>
+    <section id="c-receipt" hidden>
+      <div class="qtools">
+        <button class="btn" type="button" data-cact="backRec" data-i18n="c.tools.back">← Back</button>
+        <button class="btn primary" type="button" data-cact="copyDoc" data-doc="rec" id="cCopyRecBtn" data-i18n="c.tools.copy">Copy text</button>
+        <button class="btn" type="button" data-cact="dlRec" data-i18n="c.tools.word">Download Word</button>
+        <button class="btn" type="button" data-cact="printRec" data-i18n="c.tools.print">Print</button>
+        <button class="btn" type="button" data-cact="resetRec" data-i18n="c.tools.reset">Reset</button>
+        <span class="hint" data-i18n="c.tools.hint"></span>
+      </div>
+      <div class="blk" style="max-width:820px;margin:0 auto 12px">
+        <div class="bh"><h2 data-i18n="c.pay.title">Payments</h2><button class="btn small" type="button" data-cact="addPay" data-i18n="c.pay.add">+ Add payment</button></div>
+        <div class="bb"><div id="c-payList"></div></div>
+      </div>
+      <div id="c-rcdoc"></div>
+    </section>
+    <div id="printArea"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const NF={
+  en:new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}),
+  es:new Intl.NumberFormat('es-US',{style:'currency',currency:'USD'})
+};
+const n=x=>String(Math.round((+x||0)*100)/100);
+const STR={
+en:{
+'app.title':'Carpentry & Task Estimator',
+'app.lead':'Price trim, doors, built-ins and any handyman task. Set your own rates, track measurements, attach site photos or sketches, and hand the client a clean estimate, invoice and receipt.',
+'app.start':'Start carpentry estimate',
+'app.company':'Your company','app.cname':'Company name','app.phone':'Phone','app.email':'Email','app.license':'License number','app.logo':'Logo','app.rmlogo':'Remove logo','app.remember':'These details appear on every document and are remembered in this browser.',
+'hdr.estimate':'Estimate','a.home':'Company details',
+'doc.customer':'Customer','doc.noaddr':'Not entered','doc.why':'Why: ','doc.empty':'Nothing is switched on yet.',
+'doc.ms':'Payment milestones','doc.mstone':'Milestone','doc.nomsset':'No milestones set.','doc.mspct':'% of total','doc.msflat':'flat',
+'mat.name':'Material','mat.qty':'Quantity','mat.unit':'Unit','mat.cpu':'Cost per unit $','mat.total':'Total','mat.rm':'Remove material',
+'ms.title':'Payment milestones','ms.add':'+ Add milestone','ms.name':'Milestone','ms.type':'Type','ms.value':'Value','ms.due':'Due','ms.amount':'Amount','ms.pct':'% of total','ms.flat':'$ amount','ms.dueph':'e.g. Due on signing','ms.rm':'Remove milestone','ms.new':'New milestone','ms.empty':'No milestones. Add one to split the payments.',
+'qd.cname':'Customer name','qd.addr':'Property address','qd.terms':'Terms shown on the quote',
+'u.mswarnover':'Percentages add to','u.mswarnunder':'of the total is not assigned to any milestone.','u.msfixed':'Fix the milestones.','u.mscovered':'Milestones cover','u.msof':'of',
+'unit.sqft':'sq ft','unit.lnft':'ln ft','unit.each':'each','unit.hour':'hour','unit.project':'project','unit.gallon':'gallon','unit.quart':'quart','unit.roll':'roll','unit.tube':'tube','unit.pack':'pack','unit.box':'box','unit.sheet':'sheet'
+},
+es:{
+'app.title':'Cotizador de carpintería y trabajos',
+'app.lead':'Cotice molduras, puertas, empotrados y cualquier trabajo de mantenimiento. Ponga sus propias tarifas, lleve medidas, agregue fotos o bocetos, y entregue al cliente un estimado, factura y recibo.',
+'app.start':'Comenzar estimado de carpintería',
+'app.company':'Su empresa','app.cname':'Nombre de la empresa','app.phone':'Teléfono','app.email':'Correo electrónico','app.license':'Número de licencia','app.logo':'Logotipo','app.rmlogo':'Quitar logotipo','app.remember':'Estos datos aparecen en cada documento y se guardan en este navegador.',
+'hdr.estimate':'Estimado','a.home':'Datos de la empresa',
+'doc.customer':'Cliente','doc.noaddr':'No ingresada','doc.why':'Por qué: ','doc.empty':'Nada está activado aún.',
+'doc.ms':'Hitos de pago','doc.mstone':'Hito','doc.nomsset':'No hay hitos definidos.','doc.mspct':'% del total','doc.msflat':'fijo',
+'mat.name':'Material','mat.qty':'Cantidad','mat.unit':'Unidad','mat.cpu':'Costo por unidad $','mat.total':'Total','mat.rm':'Eliminar material',
+'ms.title':'Hitos de pago','ms.add':'+ Agregar hito','ms.name':'Hito','ms.type':'Tipo','ms.value':'Valor','ms.due':'Vence','ms.amount':'Monto','ms.pct':'% del total','ms.flat':'$ monto fijo','ms.dueph':'ej. Al firmar','ms.rm':'Eliminar hito','ms.new':'Nuevo hito','ms.empty':'No hay hitos. Agregue uno para dividir los pagos.',
+'qd.cname':'Nombre del cliente','qd.addr':'Dirección de la propiedad','qd.terms':'Términos en la cotización',
+'u.mswarnover':'Los porcentajes suman','u.mswarnunder':'del total no está asignado a ningún hito.','u.msfixed':'Corrija los hitos.','u.mscovered':'Los hitos cubren','u.msof':'de',
+'unit.sqft':'pies cuad.','unit.lnft':'pies lin.','unit.each':'c/u','unit.hour':'hora','unit.project':'proyecto','unit.gallon':'galón','unit.quart':'cuarto','unit.roll':'rollo','unit.tube':'tubo','unit.pack':'paquete','unit.box':'caja','unit.sheet':'hoja'
+}};
+const t=k=>(CS&&STR[CS.lang]&&STR[CS.lang][k]!=null)?STR[CS.lang][k]:(STR.en[k]!=null?STR.en[k]:k);
+const money=x=>(NF[CS.lang]||NF.en).format(x||0);
+const LOC=()=>CS.lang==='es'?'es-US':'en-US';
+const unitName=u=>t('unit.'+({'sq ft':'sqft','ln ft':'lnft','hr':'hr','flat':'flat','each':'each','hour':'hour','gallon':'gallon','quart':'quart','roll':'roll','tube':'tube','pack':'pack','box':'box','sheet':'sheet'}[u]||'each'));
+const MAT_UNITS=['gallon','quart','each','roll','tube','pack','box','sheet'].map(u=>[u,u]);
+const LOGO='<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="6" y="7" width="30" height="13" rx="3" fill="#F0BE2B" stroke="currentColor" stroke-width="2.5"/><path d="M36 13.5h5a2 2 0 0 1 2 2V24a2 2 0 0 1-2 2H24v6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="20.5" y="32" width="7" height="11" rx="2" fill="currentColor"/></svg>';
+function cLogoHtml(){return CS.company.logo?`<img src="${CS.company.logo}" alt="">`:LOGO}
+function docHtml(title,no,date,meta,groups,extra){
+  let h=`<h1>${esc(title)}</h1><p><b>${esc(no)}</b> — ${esc(date)}</p><p>${meta}</p>`;
+  groups.forEach(g=>{
+    h+=`<h2>${esc(g.title)} — ${money(g.sub)}</h2><table border="1" cellpadding="6" cellspacing="0">`;
+    g.lines.forEach(l=>{h+=`<tr><td>${esc(l.d)}${l.s?`<br><small>${esc(l.s)}</small>`:''}${l.why?`<br><i>Why: ${esc(l.why)}</i>`:''}</td><td align="right">${money(l.a)}</td></tr>`});
+    h+='</table>';
+  });
+  if(extra)h+=extra;
+  return h;
+}
+function cCopyText(text,ok,fail){
+  const legacy=()=>{
+    let ta=null;
+    try{
+      ta=document.createElement('textarea');
+      ta.value=text;
+      ta.setAttribute('readonly','');
+      ta.style.cssText='position:fixed;top:8px;left:8px;width:40px;height:40px;opacity:0.01;pointer-events:none;';
+      document.body.appendChild(ta);
+      ta.focus();ta.select();
+      try{ta.setSelectionRange(0,ta.value.length)}catch(e){}
+      const good=document.execCommand('copy');
+      ta.remove();
+      (good?ok:fail)();
+    }catch(e){ if(ta&&ta.remove){try{ta.remove()}catch(_){}} fail(); }
+  };
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(ok,legacy)}
+  else legacy();
+}
+function cCopyManual(text){
+  const old=document.getElementById('cCopyFb');if(old)old.remove();
+  const d=document.createElement('div');
+  d.id='cCopyFb';
+  d.style.cssText='position:fixed;inset:0;z-index:99;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px;';
+  d.innerHTML='<div class="blk" style="max-width:560px;width:100%;max-height:80vh;display:flex;flex-direction:column;gap:10px;">'+
+    '<div class="bh"><h2>'+esc(t('c.tools.copyfb'))+'</h2><button class="rm" type="button" aria-label="×">×</button></div>'+
+    '<textarea class="in" readonly style="min-height:220px;flex:1;"></textarea></div>';
+  const ta=d.querySelector('textarea');ta.value=text;
+  d.querySelector('.rm').onclick=()=>d.remove();
+  d.addEventListener('click',e=>{if(e.target===d)d.remove()});
+  document.body.appendChild(d);
+  ta.focus();ta.select();
+}
+/* ---------- real .docx writer (dependency-free OOXML) ---------- */
+function xesc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+/* docHtml() pre-escapes text (&amp; &lt; etc.); decode back before XML-escaping */
+function _hdec(s){return String(s).replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&amp;/g,'&')}
+var _crcT=(()=>{var tb=new Uint32Array(256);for(var n=0;n<256;n++){var c=n;for(var k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);tb[n]=c>>>0}return tb})();
+function _crc32(data){var c=0xFFFFFFFF;for(var i=0;i<data.length;i++)c=_crcT[(c^data[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0}
+function zipStore(files){
+  var enc=new TextEncoder();
+  var parts=[],central=[],off=0,i,j;
+  for(i=0;i<files.length;i++){
+    var f=files[i],nb=enc.encode(f.name),crc=_crc32(f.data),sz=f.data.length;
+    var lh=new Uint8Array(30),dv=new DataView(lh.buffer);
+    dv.setUint32(0,0x04034b50,true);dv.setUint16(4,20,true);dv.setUint16(6,0,true);
+    dv.setUint16(8,0,true);dv.setUint32(10,0,true);dv.setUint32(14,crc,true);
+    dv.setUint32(18,sz,true);dv.setUint32(22,sz,true);
+    dv.setUint16(26,nb.length,true);dv.setUint16(28,0,true);
+    parts.push(lh,nb,f.data);
+    central.push({nb:nb,crc:crc,sz:sz,off:off});off+=30+nb.length+sz;
+  }
+  var cdOff=off;
+  for(j=0;j<central.length;j++){
+    var c=central[j],ch=new Uint8Array(46),d2=new DataView(ch.buffer);
+    d2.setUint32(0,0x02014b50,true);d2.setUint16(4,20,true);d2.setUint16(6,20,true);
+    d2.setUint16(8,0,true);d2.setUint16(10,0,true);d2.setUint32(12,0,true);
+    d2.setUint32(16,c.crc,true);d2.setUint32(20,c.sz,true);d2.setUint32(24,c.sz,true);
+    d2.setUint16(28,c.nb.length,true);d2.setUint16(30,0,true);d2.setUint16(32,0,true);
+    d2.setUint32(42,c.off,true);
+    d2.setUint32(42,c.off,true);
+    parts.push(ch,c.nb);off+=46+c.nb.length;
+  }
+  var cdSz=off-cdOff;
+  var end=new Uint8Array(22),d3=new DataView(end.buffer);
+  d3.setUint32(0,0x06054b50,true);
+  d3.setUint16(8,central.length,true);d3.setUint16(10,central.length,true);
+  d3.setUint32(12,cdSz,true);d3.setUint32(16,cdOff,true);
+  parts.push(end);
+  return new Blob(parts,{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+}
+function _wRun(text,fmt){
+  var rpr='';
+  if(fmt.b)rpr+='<w:b/>';
+  if(fmt.i)rpr+='<w:i/>';
+  if(fmt.sz)rpr+='<w:sz w:val="'+fmt.sz+'"/>';
+  return '<w:r><w:rPr>'+rpr+'</w:rPr><w:t xml:space="preserve">'+xesc(text)+'</w:t></w:r>';
+}
+function _wPara(p){
+  var ppr='';
+  if(p.style)ppr+='<w:pStyle w:val="'+p.style+'"/>';
+  if(p.align)ppr+='<w:jc w:val="'+p.align+'"/>';
+  var runs=p.runs.length?p.runs:[{t:''}];
+  var inner='';
+  for(var i=0;i<runs.length;i++){
+    var r=runs[i];
+    if(r.br)inner+='<w:r><w:br/></w:r>';
+    else inner+=_wRun(r.t,{b:!!r.b,i:!!r.i,sz:r.sz||0});
+  }
+  return '<w:p>'+(ppr?'<w:pPr>'+ppr+'</w:pPr>':'')+inner+'</w:p>';
+}
+function _wTable(rows){
+  var ncols=1,i,ci;
+  for(i=0;i<rows.length;i++)if(rows[i].length>ncols)ncols=rows[i].length;
+  var total=9360,w1=Math.round(total*0.68);
+  var cw=function(idx){return ncols>1?(idx===0?w1:Math.round((total-w1)/(ncols-1))):total};
+  var grid='<w:tblGrid>';
+  for(i=0;i<ncols;i++)grid+='<w:gridCol w:w="'+cw(i)+'"/>';
+  grid+='</w:tblGrid>';
+  var b='<w:tblBorders>'+
+    '<w:top w:val="single" w:sz="6" w:space="0" w:color="999999"/>'+
+    '<w:left w:val="single" w:sz="6" w:space="0" w:color="999999"/>'+
+    '<w:bottom w:val="single" w:sz="6" w:space="0" w:color="999999"/>'+
+    '<w:right w:val="single" w:sz="6" w:space="0" w:color="999999"/>'+
+    '<w:insideH w:val="single" w:sz="6" w:space="0" w:color="999999"/>'+
+    '<w:insideV w:val="single" w:sz="6" w:space="0" w:color="999999"/></w:tblBorders>';
+  var t='<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/>'+b+'</w:tblPr>'+grid;
+  for(i=0;i<rows.length;i++){
+    t+='<w:tr>';
+    for(ci=0;ci<rows[i].length;ci++){
+      var cell=rows[i][ci];
+      t+='<w:tc><w:tcPr><w:tcW w:w="'+cw(ci)+'" w:type="dxa"/></w:tcPr>';
+      var ps=cell.paras.length?cell.paras:[{style:null,align:cell.align,runs:[{t:''}]}];
+      for(var pi=0;pi<ps.length;pi++){if(!ps[pi].align&&cell.align)ps[pi].align=cell.align;t+=_wPara(ps[pi]);}
+      t+='</w:tc>';
+    }
+    t+='</w:tr>';
+  }
+  return t+'</w:tbl>';
+}
+/* Converts the small HTML subset emitted by docHtml() into OOXML blocks.
+   Handles: h1 h2 p table tr td(th) br small i b(em/strong). Unknown tags ignored. */
+function htmlToDocxBody(html){
+  var blocks=[];
+  var para=null,fmt={b:false,i:false,sz:0};
+  var tbl=null,trow=null,tcell=null;
+  var startPara=function(style,align){para={kind:'p',style:style||null,align:align||null,runs:[]};fmt={b:false,i:false,sz:0};};
+  var pushRun=function(t,br){
+    if(!para)startPara(null,null);
+    if(br){para.runs.push({br:true});return;}
+    var last=para.runs[para.runs.length-1];
+    if(last&&!last.br&&last.b===fmt.b&&last.i===fmt.i&&last.sz===fmt.sz)last.t+=t;
+    else para.runs.push({t:t,b:fmt.b,i:fmt.i,sz:fmt.sz});
+  };
+  var endPara=function(){if(para){(tcell?tcell.paras:blocks).push(para);para=null;}};
+  var re=/<\/?[a-zA-Z][a-zA-Z0-9]*(?:\s+[^<>]*)?\/?>|[^<]+/g,m;
+  while((m=re.exec(html))){
+    var tok=m[0];
+    if(tok.charAt(0)!=='<'){pushRun(_hdec(tok));continue;}
+    var isClose=tok.charAt(1)==='/';
+    var nm=tok.replace(/[<>\/]/g,'').split(/\s+/)[0].toLowerCase();
+    if(!isClose){
+      if(nm==='h1'){endPara();startPara('Heading1');}
+      else if(nm==='h2'){endPara();startPara('Heading2');}
+      else if(nm==='p'){endPara();startPara(null);}
+      else if(nm==='b'||nm==='strong'){fmt.b=true;}
+      else if(nm==='i'||nm==='em'){fmt.i=true;}
+      else if(nm==='small'){fmt.sz=18;}
+      else if(nm==='br'){pushRun('',true);}
+      else if(nm==='table'){endPara();tbl={rows:[]};}
+      else if(nm==='tr'){trow=[];if(tbl)tbl.rows.push(trow);}
+      else if(nm==='td'||nm==='th'){tcell={align:/align\s*=\s*["']?right/i.test(tok)?'right':null,paras:[]};if(trow)trow.push(tcell);}
+    }else{
+      if(nm==='h1'||nm==='h2'||nm==='p')endPara();
+      else if(nm==='b'||nm==='strong')fmt.b=false;
+      else if(nm==='i'||nm==='em')fmt.i=false;
+      else if(nm==='small')fmt.sz=0;
+      else if(nm==='td'||nm==='th'){endPara();tcell=null;}
+      else if(nm==='tr')trow=null;
+      else if(nm==='table'){if(tbl)blocks.push({kind:'tbl',rows:tbl.rows});tbl=null;}
+    }
+  }
+  endPara();
+  if(tbl){blocks.push({kind:'tbl',rows:tbl.rows});tbl=null;}
+  var body='';
+  for(var bi=0;bi<blocks.length;bi++){
+    var b=blocks[bi];
+    body+=(b.kind==='tbl')?_wTable(b.rows):_wPara(b);
+  }
+  return body;
+}
+function buildDocx(bodyHtml){
+  var body=htmlToDocxBody(bodyHtml);
+  var doc='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+    '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'+
+    body+
+    '<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/></w:sectPr>'+
+    '</w:body></w:document>';
+  var ct='<?xml version="1.0" encoding="UTF-8"?>'+
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'+
+    '<Default Extension="rels" ContentType="application/vnd.openxml-package.relationships+xml"/>'+
+    '<Default Extension="xml" ContentType="application/xml"/>'+
+    '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'+
+    '</Types>';
+  var rels='<?xml version="1.0" encoding="UTF-8"?>'+
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>'+
+    '</Relationships>';
+  var enc=new TextEncoder();
+  return zipStore([
+    {name:'[Content_Types].xml',data:enc.encode(ct)},
+    {name:'_rels/.rels',data:enc.encode(rels)},
+    {name:'word/document.xml',data:enc.encode(doc)}
+  ]);
+}
+function downloadDoc(filename,bodyHtml){
+  const blob=buildDocx(bodyHtml);
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download=filename;
+  document.body.appendChild(a);a.click();
+  // Give mobile download managers plenty of time to grab the blob before
+  // revoking: revoking too early corrupts the file ("can't open file").
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},60000);
+}
+
+function cApplyI18n(){
+  document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=t(el.dataset.i18n)});
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{el.placeholder=t(el.dataset.i18nPh)});
+  document.querySelectorAll('[data-i18n-aria]').forEach(el=>{el.setAttribute('aria-label',t(el.dataset.i18nAria))});
+  document.querySelectorAll('[data-lang]').forEach(b=>b.classList.toggle('on',b.dataset.lang===CS.lang));
+  document.documentElement.lang=CS.lang;
+  document.title=t('app.title');
+}
+function cSetLang(l){
+  if(l!=='en'&&l!=='es')return;
+  if(CS.lang===l)return;
+  CS.lang=l;cMsCount=-1;
+  cRender();cApplyI18n();cUpdate();
+}
+function cCompanyUI(){
+  document.querySelectorAll('[data-cname]').forEach(el=>{el.textContent=CS.company.name||t('app.company')});
+  document.querySelectorAll('[data-logo]').forEach(el=>{el.innerHTML=cLogoHtml()});
+}
+/*__CARP_PURE_START__*/
+const cR2=x=>Math.round((x+Number.EPSILON)*100)/100;
+const cNum=x=>{const v=parseFloat(x);return (isFinite(v)&&v>0)?v:0};
+function cItemAmount(qty,rate){return cR2(cNum(qty)*cNum(rate))}
+function cMatAmount(qty,cost){return cR2(cNum(qty)*cNum(cost))}
+function cTotals(items,materials){
+  const perItem=items.map(it=>cItemAmount(it.qty,it.rate));
+  const itemsTotal=cR2(perItem.reduce((s,a)=>s+a,0));
+  const matTotal=cR2(materials.map(m=>cMatAmount(m.qty,m.cost)).reduce((s,a)=>s+a,0));
+  return{perItem,itemsTotal,matTotal,total:cR2(itemsTotal+matTotal)};
+}
+function cMilestones(total,milestones){
+  let sp=0;
+  const rows=milestones.map(m=>{
+    const isFlat=m.mode==='$';
+    const v=Math.max(0,+m.value||0);
+    const amt=isFlat?cR2(v):cR2(total*v/100);
+    if(!isFlat)sp+=v;
+    return{m,amt,isFlat,v};
+  });
+  const covered=cR2(rows.reduce((s,r)=>s+r.amt,0));
+  let warn='';
+  if(sp>100)warn='over';
+  else if(sp<100&&rows.length)warn='under';
+  return{rows,sumPct:cR2(sp),covered,warn};
+}
+function cReceiptCalc(total,payments){
+  const paid=cR2(payments.reduce((s,p)=>s+cNum(p.amount),0));
+  return{paid,balance:cR2(total-paid)};
+}
+function cTaskAmount(task,laborRate){
+  if(!task)return 0;
+  const m=task.mode;
+  if(m==='hourly')return cR2(cNum(task.hours)*cNum(laborRate));
+  if(m==='flat')return cR2(cNum(task.flat));
+  return cR2(cNum(task.qty)*cNum(task.rate));
+}
+function cTaskMeasSum(task){
+  return cR2((task&&task.meas||[]).reduce((s,m)=>s+cNum(m.qty),0));
+}
+/*__CARP_PURE_END__*/
+
+/* ---------- i18n additions ---------- */
+Object.assign(STR.en,{
+'mod.paint':'Painting','mod.carp':'Carpentry',
+'c.start':'Start estimate',
+'c.sum.title':'Cost summary','c.sum.trim':'Trim installation','c.sum.doors':'Door installation','c.sum.builtins':'Built-ins','c.sum.custom':'Custom work','c.sum.materials':'Materials','c.sum.total':'Total estimate',
+'c.act.estimate':'Generate estimate','c.act.invoice':'Generate invoice','c.act.receipt':'Generate receipt',
+'c.rates.title':'Rate card — your rates','c.rates.hint':'Your own rates. Contractors set their own prices here — carpentry costs depend on material, profile and site conditions. Every rate below can be overridden on a single line item.',
+'c.rates.trim':'Trim installation $ per ln ft','c.rates.door':'Door installation $ per door','c.rates.builtin':'Built-ins $ per project','c.rates.labor':'Labor $ per hour',
+'c.rates.custom':'Custom rates','c.rates.addCustom':'+ Add custom rate','c.rates.name':'Rate name','c.rates.unit':'Unit','c.rates.rate':'Rate $','c.rates.rm':'Remove custom rate','c.rates.empty':'No custom rates. Add ones you reuse, e.g. "Stair tread $ each".',
+'c.items.title':'Work items','c.items.add':'+ Add work item','c.items.empty':'No work items yet. Add trim runs, doors, built-ins or custom work.',
+'c.items.type':'Type','c.items.name':'Item name','c.items.namePh':'e.g. Living room baseboard','c.items.qty':'Quantity','c.items.rate':'Rate $','c.items.amount':'Amount','c.items.note':'Note (shown on documents)','c.items.notePh':'e.g. paint-grade poplar, cope inside corners','c.items.rm':'Remove work item','c.items.unit':'Unit',
+'c.kind.trim':'Trim installation','c.kind.door':'Door installation','c.kind.builtin':'Built-ins','c.kind.custom':'Custom work',
+'c.meas.title':'Measurements','c.meas.hint':'Track measurements here. Send any measurement straight into a work item quantity — no retyping.',
+'c.meas.add':'+ Add measurement','c.meas.empty':'No measurements yet.','c.meas.label':'What','c.meas.labelPh':'e.g. Living room baseboard','c.meas.qty':'Qty','c.meas.unit':'Unit','c.meas.note':'Note','c.meas.send':'Send to item','c.meas.go':'→ Item qty','c.meas.rm':'Remove measurement',
+'c.photos.title':'Site photos & sketches','c.photos.hint':'Up to 10 photos or sketches per estimate. Each photo holds up to 10 detail / measurement entries, and every entry can link to a work item.',
+'c.photos.empty':'No photos yet. Snap the site or a hand sketch.','c.photos.rm':'Remove photo','c.photos.detail':'Detail / measurement','c.photos.detailPh':'e.g. 42 LF, inside corner, casing 3-1/2 in','c.photos.link':'Link to item','c.photos.nolink':'No link','c.photos.addDetail':'+ Add detail','c.photos.maxDetail':'Maximum 10 details per photo.','c.photos.quota':'Browser storage is full — new photos were not saved. Remove old ones or save the profile first.',
+'c.mats.title':'Materials','c.mats.add':'+ Add material','c.mats.hint':'Materials change per job. Edit freely — the documents show the materials total and your line items.',
+'c.client.title':'Client & terms','c.client.hint':'Client details and terms appear on every document.',
+'c.prof.title':'Contractor profile','c.prof.name':'Profile name','c.prof.namePh':'e.g. Franklin — FG BestWay','c.prof.save':'Save profile','c.prof.load':'Load','c.prof.del':'Delete','c.prof.hint':'Profiles live in this browser (until the web app with accounts arrives). A profile keeps your rate card, company rates and saved documents.',
+'c.prof.savedDocs':'Saved documents','c.prof.empty':'No saved documents yet. They are saved automatically when you generate them.','c.prof.view':'View','c.prof.print':'Print','c.prof.saved':'Profile saved.','c.prof.loaded':'Profile loaded.','c.prof.deleted':'Profile deleted.','c.prof.noname':'Type a profile name first.',
+'c.doc.estimate':'Estimate','c.doc.invoice':'Invoice','c.doc.receipt':'Receipt','c.doc.valid':'Valid until','c.doc.prep':'Prepared for','c.doc.prop':'Property','c.doc.total':'Total','c.doc.deposit':'Deposit to start the project','c.doc.baldue':'Balance due on completion','c.doc.accept':'Client acceptance — I agree to the work and price above.','c.doc.sign':'Signature','c.doc.pname':'Print name','c.doc.mats':'Materials','c.doc.matsline':'Lumber, hardware and supplies for this job','c.doc.photos':'Site photos & sketches','c.doc.measurements':'Measurements','c.doc.payments':'Payments received','c.doc.paid':'Total paid','c.doc.balance':'Balance due','c.doc.paidfull':'PAID IN FULL','c.doc.invref':'Invoice','c.doc.method':'Method','c.doc.date':'Date','c.doc.amount':'Amount',
+'c.pay.title':'Payments','c.pay.add':'+ Add payment','c.pay.empty':'No payments recorded yet.','c.pay.date':'Date','c.pay.method':'Method','c.pay.methodPh':'e.g. Cash, Zelle, Check','c.pay.amount':'Amount $','c.pay.note':'Note','c.pay.rm':'Remove payment',
+'c.tools.back':'← Back','c.tools.reset':'Reset','c.tools.copy':'Copy text','c.tools.copied':'Copied','c.tools.copyfb':'Select and copy the text below','c.tools.word':'Download Word','c.tools.print':'Print','c.tools.hint':'The document updates as you change the estimate. Back returns to the estimate without losing anything; Reset clears the generated document (your estimate data is kept).',
+'c.est.saved':'Estimate saved to profile.','c.inv.saved':'Invoice saved to profile.','c.rec.saved':'Receipt saved to profile.',
+'c.sum.tasks':'Tasks','c.doc.tasks':'Tasks',
+'c.task.title':'Tasks — any handyman job','c.task.hint':'For anything that is not trim, doors or built-ins: describe the task, pick a type, add measurements, choose how it is priced. The type list is yours — customize it below.','c.task.add':'+ Add task','c.task.empty':'No tasks yet. Add plumbing, electrical, drywall or any other handyman work.',
+'c.task.desc':'Description','c.task.descPh':'e.g. Fix leaking kitchen faucet','c.task.type':'Type','c.task.mode':'Pricing','c.task.modeUnit':'Per unit','c.task.modeHourly':'Hourly','c.task.modeFlat':'Flat','c.task.qty':'Quantity','c.task.rate':'Rate $','c.task.hours':'Hours','c.task.flat':'Flat amount $','c.task.laborRate':'Labor rate (from rate card)','c.task.photo':'Linked photo','c.task.noPhoto':'No photo','c.task.notes':'Notes (shown on documents)','c.task.notesPh':'e.g. includes parts up to $50','c.task.amount':'Amount','c.task.rm':'Remove task','c.task.untitled':'Task',
+'c.task.meas':'Measurements','c.task.measAdd':'+ Add measurement','c.task.useQty':'→ Use for quantity','c.task.mLabel':'What','c.task.mQty':'Qty','c.task.mUnit':'Unit','c.task.mRm':'Remove measurement',
+'c.task.types':'Task types','c.task.typesHint':'Your own type list. The presets cannot be removed.','c.task.newType':'New type name','c.task.newTypePh':'e.g. Roofing','c.task.addType':'Add type',
+'c.ttype.carpentry':'Carpentry','c.ttype.plumbing':'Plumbing','c.ttype.electrical':'Electrical','c.ttype.drywall':'Drywall','c.ttype.masonry':'Masonry','c.ttype.general':'General',
+'unit.project':'project'
+});
+Object.assign(STR.es,{
+'mod.paint':'Pintura','mod.carp':'Carpintería',
+'c.start':'Comenzar estimado',
+'c.sum.title':'Resumen de costos','c.sum.trim':'Instalación de molduras','c.sum.doors':'Instalación de puertas','c.sum.builtins':'Empotrados','c.sum.custom':'Trabajo personalizado','c.sum.materials':'Materiales','c.sum.total':'Estimado total',
+'c.act.estimate':'Generar estimado','c.act.invoice':'Generar factura','c.act.receipt':'Generar recibo',
+'c.rates.title':'Tarifario — sus precios','c.rates.hint':'Sus propios precios. Cada contratista pone sus tarifas aquí — la carpintería depende del material, el perfil y las condiciones del sitio. Cada tarifa se puede cambiar en un trabajo individual.',
+'c.rates.trim':'Instalación de molduras $ por pie lin.','c.rates.door':'Instalación de puertas $ por puerta','c.rates.builtin':'Empotrados $ por proyecto','c.rates.labor':'Mano de obra $ por hora',
+'c.rates.custom':'Tarifas personalizadas','c.rates.addCustom':'+ Agregar tarifa','c.rates.name':'Nombre','c.rates.unit':'Unidad','c.rates.rate':'Tarifa $','c.rates.rm':'Eliminar tarifa','c.rates.empty':'Sin tarifas personalizadas. Agregue las que repite, ej. "Peldaño $ c/u".',
+'c.items.title':'Trabajos','c.items.add':'+ Agregar trabajo','c.items.empty':'Sin trabajos aún. Agregue molduras, puertas, empotrados o trabajo personalizado.',
+'c.items.type':'Tipo','c.items.name':'Nombre','c.items.namePh':'ej. Zócalo de la sala','c.items.qty':'Cantidad','c.items.rate':'Tarifa $','c.items.amount':'Monto','c.items.note':'Nota (aparece en los documentos)','c.items.notePh':'ej. madera para pintar, esquinas a inglete','c.items.rm':'Eliminar trabajo','c.items.unit':'Unidad',
+'c.kind.trim':'Instalación de molduras','c.kind.door':'Instalación de puertas','c.kind.builtin':'Empotrados','c.kind.custom':'Trabajo personalizado',
+'c.meas.title':'Medidas','c.meas.hint':'Lleve sus medidas aquí. Envíe cualquier medida directo a la cantidad de un trabajo — sin volver a escribir.',
+'c.meas.add':'+ Agregar medida','c.meas.empty':'Sin medidas aún.','c.meas.label':'Qué','c.meas.labelPh':'ej. Zócalo de la sala','c.meas.qty':'Cant.','c.meas.unit':'Unidad','c.meas.note':'Nota','c.meas.send':'Enviar al trabajo','c.meas.go':'→ Cantidad','c.meas.rm':'Eliminar medida',
+'c.photos.title':'Fotos y bocetos','c.photos.hint':'Hasta 10 fotos o bocetos por estimado. Cada foto guarda hasta 10 detalles / medidas, y cada detalle se puede enlazar a un trabajo.',
+'c.photos.empty':'Sin fotos aún. Fotografíe el sitio o un boceto a mano.','c.photos.rm':'Eliminar foto','c.photos.detail':'Detalle / medida','c.photos.detailPh':'ej. 42 pies lin., esquina interior, contramarco 3-1/2 pulg','c.photos.link':'Enlazar al trabajo','c.photos.nolink':'Sin enlace','c.photos.addDetail':'+ Agregar detalle','c.photos.maxDetail':'Máximo 10 detalles por foto.','c.photos.quota':'El almacenamiento del navegador está lleno — las fotos nuevas no se guardaron. Elimine fotos viejas o guarde el perfil primero.',
+'c.mats.title':'Materiales','c.mats.add':'+ Agregar material','c.mats.hint':'Los materiales cambian por trabajo. Edite libremente — los documentos muestran el total y sus líneas.',
+'c.client.title':'Cliente y términos','c.client.hint':'Los datos del cliente y los términos aparecen en cada documento.',
+'c.prof.title':'Perfil del contratista','c.prof.name':'Nombre del perfil','c.prof.namePh':'ej. Franklin — FG BestWay','c.prof.save':'Guardar perfil','c.prof.load':'Cargar','c.prof.del':'Eliminar','c.prof.hint':'Los perfiles viven en este navegador (hasta que llegue la aplicación web con cuentas). Un perfil guarda su tarifario y sus documentos.',
+'c.prof.savedDocs':'Documentos guardados','c.prof.empty':'Sin documentos guardados aún. Se guardan automáticamente al generarlos.','c.prof.view':'Ver','c.prof.print':'Imprimir','c.prof.saved':'Perfil guardado.','c.prof.loaded':'Perfil cargado.','c.prof.deleted':'Perfil eliminado.','c.prof.noname':'Escriba un nombre de perfil primero.',
+'c.doc.estimate':'Estimado','c.doc.invoice':'Factura','c.doc.receipt':'Recibo','c.doc.valid':'Válido hasta','c.doc.prep':'Preparado para','c.doc.prop':'Propiedad','c.doc.total':'Total','c.doc.deposit':'Depósito para comenzar el proyecto','c.doc.baldue':'Saldo al terminar el trabajo','c.doc.accept':'Aceptación del cliente — Acepto el trabajo y el precio indicados.','c.doc.sign':'Firma','c.doc.pname':'Nombre en letra de molde','c.doc.mats':'Materiales','c.doc.matsline':'Madera, herrajes y materiales para este trabajo','c.doc.photos':'Fotos y bocetos','c.doc.measurements':'Medidas','c.doc.payments':'Pagos recibidos','c.doc.paid':'Total pagado','c.doc.balance':'Saldo pendiente','c.doc.paidfull':'PAGADO EN SU TOTALIDAD','c.doc.invref':'Factura','c.doc.method':'Método','c.doc.date':'Fecha','c.doc.amount':'Monto',
+'c.pay.title':'Pagos','c.pay.add':'+ Agregar pago','c.pay.empty':'Sin pagos registrados aún.','c.pay.date':'Fecha','c.pay.method':'Método','c.pay.methodPh':'ej. Efectivo, Zelle, Cheque','c.pay.amount':'Monto $','c.pay.note':'Nota','c.pay.rm':'Eliminar pago',
+'c.tools.back':'← Atrás','c.tools.reset':'Restablecer','c.tools.copy':'Copiar texto','c.tools.copied':'Copiado','c.tools.copyfb':'Seleccione y copie el texto de abajo','c.tools.word':'Descargar Word','c.tools.print':'Imprimir','c.tools.hint':'El documento se actualiza al cambiar el estimado. Atrás vuelve al estimado sin perder nada; Restablecer limpia el documento generado (sus datos se conservan).',
+'c.est.saved':'Estimado guardado en el perfil.','c.inv.saved':'Factura guardada en el perfil.','c.rec.saved':'Recibo guardado en el perfil.',
+'c.sum.tasks':'Trabajos','c.doc.tasks':'Trabajos',
+'c.task.title':'Trabajos — cualquier tarea','c.task.hint':'Para lo que no sea molduras, puertas o empotrados: describa la tarea, elija un tipo, agregue medidas y elija cómo se cobra. La lista de tipos es suya — personalícela abajo.','c.task.add':'+ Agregar trabajo','c.task.empty':'Sin trabajos aún. Agregue plomería, electricidad, drywall u otro trabajo.',
+'c.task.desc':'Descripción','c.task.descPh':'ej. Arreglar llave de cocina que gotea','c.task.type':'Tipo','c.task.mode':'Cobro','c.task.modeUnit':'Por unidad','c.task.modeHourly':'Por hora','c.task.modeFlat':'Monto fijo','c.task.qty':'Cantidad','c.task.rate':'Tarifa $','c.task.hours':'Horas','c.task.flat':'Monto fijo $','c.task.laborRate':'Tarifa por hora (del tarifario)','c.task.photo':'Foto enlazada','c.task.noPhoto':'Sin foto','c.task.notes':'Notas (aparecen en los documentos)','c.task.notesPh':'ej. incluye materiales hasta $50','c.task.amount':'Monto','c.task.rm':'Eliminar trabajo','c.task.untitled':'Trabajo',
+'c.task.meas':'Medidas','c.task.measAdd':'+ Agregar medida','c.task.useQty':'→ Usar como cantidad','c.task.mLabel':'Qué','c.task.mQty':'Cant.','c.task.mUnit':'Unidad','c.task.mRm':'Eliminar medida',
+'c.task.types':'Tipos de trabajo','c.task.typesHint':'Su propia lista de tipos. Los predefinidos no se pueden eliminar.','c.task.newType':'Nombre del nuevo tipo','c.task.newTypePh':'ej. Techos','c.task.addType':'Agregar tipo',
+'c.ttype.carpentry':'Carpintería','c.ttype.plumbing':'Plomería','c.ttype.electrical':'Electricidad','c.ttype.drywall':'Drywall','c.ttype.masonry':'Mampostería','c.ttype.general':'General',
+'unit.project':'proyecto'
+});
+STR.en['app.title']='Carpentry & Task Estimator';
+STR.es['app.title']='Cotizador de carpintería y trabajos';
+
+/* ---------- carpentry state ---------- */
+const C_KINDS={
+  trim:{unit:'ln ft',rateKey:'trim'},
+  door:{unit:'each',rateKey:'door'},
+  builtin:{unit:'project',rateKey:'builtin'},
+  custom:{unit:'',rateKey:null}
+};
+const C_CUSTOM_UNITS=['ln ft','sq ft','each','hour','project'];
+const cMkItem=(kind)=>({kind:kind||'trim',name:'',qty:1,unit:'',rate:null,note:''});
+const cMkMat=()=>({name:'New material',qty:1,unit:'each',cost:10});
+const cMkMeas=()=>({label:'',qty:0,unit:'ln ft',note:'',target:-1});
+const cMkDetail=()=>({text:'',item:-1});
+const cMkPay=()=>({date:new Date().toISOString().slice(0,10),method:'',amount:0,note:''});
+const C_TASK_PRESETS=['carpentry','plumbing','electrical','drywall','masonry','general'];
+const cTaskTypeName=ty=>ty&&ty.indexOf('x:')===0?ty.slice(2):t('c.ttype.'+(ty||'general'));
+const cMkTask=()=>({desc:'',type:'general',meas:[],qty:1,mode:'unit',rate:0,hours:0,flat:0,photo:-1,notes:''});
+const cMkTMeas=()=>({label:'',qty:0,unit:'each',note:''});
+function cFresh(){return{
+  lang:'en',
+  company:{name:'',phone:'',email:'',license:'',logo:''},
+  rates:{trim:0,door:0,builtin:0,labor:0},
+  customRates:[],
+  items:[],tasks:[],customTaskTypes:[],materials:[],measurements:[],photos:[],
+  milestones:[
+    {name:'Deposit',mode:'%',value:30,due:'Due on signing'},
+    {name:'Balance on completion',mode:'%',value:70,due:'Due at final walkthrough'}
+  ],
+  client:{name:'',address:''},
+  terms:'This estimate is valid for 30 days. Extra work found once the job begins is priced and approved with you before it is done. Payment terms are agreed before the start date.',
+  payments:[],
+  profileName:'',
+  docNos:{q:0,i:0,r:0},
+  estOn:false,qdate:0,invOn:false,inDate:0,recOn:false,rDate:0,
+  savedDocs:[]
+}}
+let CS=cFresh(), CC=null;
+
+const CSTORE='carpentry-estimator-v1', CPROF='carpentry-profiles-v1';
+function cLoad(){try{
+  const raw=localStorage.getItem(CSTORE);if(!raw)return;
+  const d=JSON.parse(raw);
+  ['rates','customRates','items','tasks','customTaskTypes','materials','measurements','photos','milestones','client','terms','payments','profileName','docNos','savedDocs','company'].forEach(k=>{if(d[k]!==undefined)CS[k]=d[k]});
+  if(d.estOn)CS.estOn=true; if(d.invOn)CS.invOn=true; if(d.recOn)CS.recOn=true;
+  if(d.qdate)CS.qdate=d.qdate; if(d.inDate)CS.inDate=d.inDate; if(d.rDate)CS.rDate=d.rDate;
+  if(d.lang==='en'||d.lang==='es')CS.lang=d.lang;
+}catch(e){}}
+let cSaveT=0;
+function cSave(){clearTimeout(cSaveT);cSaveT=setTimeout(()=>{try{
+  localStorage.setItem(CSTORE,JSON.stringify({rates:CS.rates,customRates:CS.customRates,items:CS.items,tasks:CS.tasks,customTaskTypes:CS.customTaskTypes,materials:CS.materials,measurements:CS.measurements,photos:CS.photos,milestones:CS.milestones,client:CS.client,terms:CS.terms,payments:CS.payments,profileName:CS.profileName,docNos:CS.docNos,estOn:CS.estOn,qdate:CS.qdate,invOn:CS.invOn,inDate:CS.inDate,recOn:CS.recOn,rDate:CS.rDate,savedDocs:CS.savedDocs.slice(-30),lang:CS.lang,company:CS.company}));
+}catch(e){
+  const w=document.querySelector('[data-cout="c.photoWarn"]');
+  if(w)w.textContent=t('c.photos.quota');
+}},400)}
+
+/* ---------- carpentry path access ---------- */
+const cGetP=p=>p.split('.').reduce((o,k)=>o==null?o:o[k],CS);
+function cSetP(p,v){const a=p.split('.');const last=a.pop();a.reduce((o,k)=>o[k],CS)[last]=v}
+function cCardRate(kind){const km=C_KINDS[kind];return km&&km.rateKey?+CS.rates[km.rateKey]||0:0}
+function cGetDisp(k){
+  const m=k.match(/^items\.(\d+)\.rate$/);
+  if(m){const it=CS.items[+m[1]];if(!it)return null;return it.rate!=null?it.rate:cCardRate(it.kind)}
+  return cGetP(k);
+}
+function cCond(expr){
+  let neg=false;
+  if(expr[0]==='!'){neg=true;expr=expr.slice(1)}
+  const r=!!cGetP(expr);
+  return neg?!r:r;
+}
+function cFmtNum(v,k){
+  if(/\.(rate|cost)$/.test(k)||k.indexOf('rates.')===0)return Number(v).toFixed(2);
+  return String(Math.round(v*100)/100);
+}
+
+/* ---------- carpentry calculation ---------- */
+function cCalc(){
+  const items=CS.items.map(it=>{
+    const rt=it.rate!=null?cNum(it.rate):cCardRate(it.kind);
+    return{it,rt,amt:cItemAmount(it.qty,rt)};
+  });
+  const mats=CS.materials.map(m=>cMatAmount(m.qty,m.cost));
+  const tasks=CS.tasks.map(task=>({task,amt:cTaskAmount(task,+CS.rates.labor||0)}));
+  const itemsTotal=cR2(items.reduce((s,e)=>s+e.amt,0));
+  const matTotal=cR2(mats.reduce((s,a)=>s+a,0));
+  const tasksTotal=cR2(tasks.reduce((s,e)=>s+e.amt,0));
+  return{items,mats,tasks,itemsTotal,matTotal,tasksTotal,total:cR2(itemsTotal+matTotal+tasksTotal)};
+}
+function cItemLabel(it){
+  const base=t('c.kind.'+it.kind);
+  return it.name?base+' — '+it.name:base;
+}
+const cUnitName=u=>t('unit.'+({'ln ft':'lnft','sq ft':'sqft','each':'each','hour':'hour','project':'project'}[u]||'each'));
+function cItemUnit(it){return it.kind==='custom'?(it.unit||'each'):C_KINDS[it.kind].unit}
+
+/* ---------- carpentry html builders ---------- */
+const cNumIn=(k,o={})=>`<input class="in n" type="number" inputmode="decimal" min="0" step="${o.step||'any'}" data-ck="${k}"${o.nullable?' data-nullable':''}>`;
+const cTxtIn=(k,ph)=>`<input class="in" type="text" data-ck="${k}"${ph?` placeholder="${esc(ph)}"`:''}>`;
+const cFld=(label,inner)=>`<label class="f"><span>${label}</span>${inner}</label>`;
+const cOut=k=>`<b class="amt" data-cout="${k}"></b>`;
+
+function cSecRates(){
+  const rows=CS.customRates.map((r,i)=>{
+    const p=`customRates.${i}`;
+    return `<div class="xrow"><div class="xhead"><b>${esc(r.name||t('c.rates.custom')+' '+(i+1))}</b><button class="rm" type="button" data-crm="${p}" aria-label="${esc(t('c.rates.rm'))}">×</button></div>
+    <div class="row">
+      ${cFld(t('c.rates.name'),cTxtIn(p+'.name'))}
+      ${cFld(t('c.rates.unit'),`<select class="in" data-ck="${p}.unit">${C_CUSTOM_UNITS.map(u=>`<option value="${u}">${esc(cUnitName(u))}</option>`).join('')}</select>`)}
+      ${cFld(t('c.rates.rate'),cNumIn(p+'.rate'))}
+    </div></div>`;
+  }).join('');
+  return `<section class="blk"><div class="bh"><h2>${t('c.rates.title')}</h2></div><div class="bb">
+    <p class="hint">${t('c.rates.hint')}</p>
+    <div class="row">
+      ${cFld(t('c.rates.trim'),cNumIn('rates.trim'))}
+      ${cFld(t('c.rates.door'),cNumIn('rates.door'))}
+      ${cFld(t('c.rates.builtin'),cNumIn('rates.builtin'))}
+      ${cFld(t('c.rates.labor'),cNumIn('rates.labor'))}
+    </div>
+    <div class="extras"><h4>${t('c.rates.custom')}</h4>${rows||`<p class="hint">${t('c.rates.empty')}</p>`}
+    <button class="btn small" type="button" data-cact="addCustomRate">${t('c.rates.addCustom')}</button></div>
+  </div></section>`;
+}
+function cSecItems(){
+  const rows=CS.items.map((it,i)=>{
+    const p=`items.${i}`, unit=cItemUnit(it);
+    return `<div class="item"><div class="ih"><b>${esc(cItemLabel(it))}</b><button class="rm" type="button" data-crm="${p}" aria-label="${esc(t('c.items.rm'))}">×</button></div>
+    <div class="row">
+      ${cFld(t('c.items.type'),`<select class="in" data-ck="${p}.kind">${Object.keys(C_KINDS).map(k=>`<option value="${k}">${esc(t('c.kind.'+k))}</option>`).join('')}</select>`)}
+      ${cFld(t('c.items.name'),cTxtIn(p+'.name',t('c.items.namePh')))}
+      ${it.kind==='custom'?cFld(t('c.items.unit'),`<select class="in" data-ck="${p}.unit">${C_CUSTOM_UNITS.map(u=>`<option value="${u}">${esc(cUnitName(u))}</option>`).join('')}</select>`):''}
+      ${cFld(t('c.items.qty')+' ('+esc(cUnitName(unit))+')',cNumIn(p+'.qty'))}
+      ${cFld(t('c.items.rate')+' $',cNumIn(p+'.rate',{nullable:true}))}
+      <div class="f"><span>${t('c.items.amount')}</span>${cOut('c:item.'+i)}</div>
+    </div>
+    ${cFld(t('c.items.note'),cTxtIn(p+'.note',t('c.items.notePh')))}
+    </div>`;
+  }).join('');
+  return `<section class="blk"><div class="bh"><h2>${t('c.items.title')}</h2><div style="display:flex;gap:10px;align-items:center"><span class="sum" data-cout="c.itemsTotal"></span><button class="btn small" type="button" data-cact="addItem">${t('c.items.add')}</button></div></div><div class="bb">
+    ${rows||`<p class="hint">${t('c.items.empty')}</p>`}</div></section>`;
+}
+function cSecTasks(){
+  const customOpts=CS.customTaskTypes.map(nm=>`<option value="x:${esc(nm)}">${esc(nm)}</option>`).join('');
+  const chips=CS.customTaskTypes.map((nm,i)=>`<span class="tchip">${esc(nm)}<button class="rm" type="button" data-crm="customTaskTypes.${i}" aria-label="×" style="width:22px;height:22px;font-size:13px">×</button></span>`).join('');
+  const photoOpts=`<option value="-1">${esc(t('c.task.noPhoto'))}</option>`+CS.photos.map((ph,pi)=>`<option value="${pi}">${esc(ph.name||('Photo '+(pi+1)))}</option>`).join('');
+  const rows=CS.tasks.map((tk,i)=>{
+    const p=`tasks.${i}`;
+    const measRows=tk.meas.map((m,mi)=>{
+      const mp=`${p}.meas.${mi}`;
+      return `<div class="xrow"><div class="row">
+        ${cFld(t('c.task.mLabel'),cTxtIn(mp+'.label'))}
+        ${cFld(t('c.task.mQty'),cNumIn(mp+'.qty'))}
+        ${cFld(t('c.task.mUnit'),`<select class="in" data-ck="${mp}.unit">${C_CUSTOM_UNITS.map(u=>`<option value="${u}">${esc(cUnitName(u))}</option>`).join('')}</select>`)}
+        ${cFld(t('c.meas.note'),cTxtIn(mp+'.note'))}
+        <div class="f"><span>&nbsp;</span><button class="rm" type="button" data-crm="${mp}" aria-label="${esc(t('c.task.mRm'))}">×</button></div>
+      </div></div>`;
+    }).join('');
+    const modeFields=tk.mode==='hourly'
+      ?`<div class="row">${cFld(t('c.task.hours'),cNumIn(p+'.hours'))}<div class="f"><span>${t('c.task.laborRate')}</span><b class="amt">${money(+CS.rates.labor||0)} / ${esc(t('unit.hour'))}</b></div></div>`
+      :tk.mode==='flat'
+      ?`<div class="row">${cFld(t('c.task.flat'),cNumIn(p+'.flat'))}</div>`
+      :`<div class="row">${cFld(t('c.task.qty'),cNumIn(p+'.qty'))}${cFld(t('c.task.rate')+' $',cNumIn(p+'.rate'))}</div>`;
+    return `<div class="item"><div class="ih"><b>${esc(tk.desc||t('c.task.untitled'))} <small>· ${esc(cTaskTypeName(tk.type))}</small></b><button class="rm" type="button" data-crm="${p}" aria-label="${esc(t('c.task.rm'))}">×</button></div>
+    <div class="row">
+      ${cFld(t('c.task.desc'),cTxtIn(p+'.desc',t('c.task.descPh')))}
+      ${cFld(t('c.task.type'),`<select class="in" data-ck="${p}.type">${C_TASK_PRESETS.map(k=>`<option value="${k}">${esc(cTaskTypeName(k))}</option>`).join('')}${customOpts}</select>`)}
+      ${cFld(t('c.task.mode'),`<select class="in" data-ck="${p}.mode"><option value="unit">${esc(t('c.task.modeUnit'))}</option><option value="hourly">${esc(t('c.task.modeHourly'))}</option><option value="flat">${esc(t('c.task.modeFlat'))}</option></select>`)}
+      ${cFld(t('c.task.photo'),`<select class="in" data-ck="${p}.photo">${photoOpts}</select>`)}
+      <div class="f"><span>${t('c.task.amount')}</span>${cOut('c:task.'+i)}</div>
+    </div>
+    ${modeFields}
+    <div class="extras"><h4>${t('c.task.meas')}</h4>${measRows}
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn small" type="button" data-cact="addTaskMeas" data-i="${i}">${t('c.task.measAdd')}</button><button class="btn small" type="button" data-cact="taskMeasToQty" data-i="${i}">${t('c.task.useQty')}</button></div></div>
+    ${cFld(t('c.task.notes'),cTxtIn(p+'.notes',t('c.task.notesPh')))}
+    </div>`;
+  }).join('');
+  return `<section class="blk"><div class="bh"><h2>${t('c.task.title')}</h2><div style="display:flex;gap:10px;align-items:center"><span class="sum" data-cout="c.tasksTotal"></span><button class="btn small" type="button" data-cact="addTask">${t('c.task.add')}</button></div></div><div class="bb">
+    <p class="hint">${t('c.task.hint')}</p>
+    ${rows||`<p class="hint">${t('c.task.empty')}</p>`}
+    <div class="extras"><h4>${t('c.task.types')}</h4>
+      <p class="hint">${t('c.task.typesHint')}</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">${chips||'<span class="hint">—</span>'}</div>
+      <div class="row">${cFld(t('c.task.newType'),`<input class="in" id="cNewTaskType" placeholder="${esc(t('c.task.newTypePh'))}">`)}
+      <div class="f"><span>&nbsp;</span><button class="btn small" type="button" data-cact="addTaskType">${t('c.task.addType')}</button></div></div>
+    </div>
+  </div></section>`;
+}
+function cSecMeas(){
+  const itemOpts=CS.items.map((it,i)=>`<option value="${i}">${esc((i+1)+' — '+cItemLabel(it))}</option>`).join('');
+  const rows=CS.measurements.map((m,i)=>{
+    const p=`measurements.${i}`;
+    return `<div class="item"><div class="row">
+      ${cFld(t('c.meas.label'),cTxtIn(p+'.label',t('c.meas.labelPh')))}
+      ${cFld(t('c.meas.qty'),cNumIn(p+'.qty'))}
+      ${cFld(t('c.meas.unit'),`<select class="in" data-ck="${p}.unit">${C_CUSTOM_UNITS.map(u=>`<option value="${u}">${esc(cUnitName(u))}</option>`).join('')}</select>`)}
+      ${cFld(t('c.meas.note'),cTxtIn(p+'.note'))}
+      ${cFld(t('c.meas.send'),`<select class="in" data-ck="${p}.target"><option value="-1">—</option>${itemOpts}</select>`)}
+      <div class="f"><span>&nbsp;</span><div style="display:flex;gap:8px"><button class="btn small" type="button" data-cact="measToItem" data-i="${i}">${t('c.meas.go')}</button><button class="rm" type="button" data-crm="${p}" aria-label="${esc(t('c.meas.rm'))}">×</button></div></div>
+    </div></div>`;
+  }).join('');
+  return `<section class="blk"><div class="bh"><h2>${t('c.meas.title')}</h2><button class="btn small" type="button" data-cact="addMeas">${t('c.meas.add')}</button></div><div class="bb">
+    <p class="hint">${t('c.meas.hint')}</p>${rows||`<p class="hint">${t('c.meas.empty')}</p>`}</div></section>`;
+}
+function cSecPhotos(){
+  const cards=CS.photos.map((ph,pi)=>{
+    const dets=ph.details.map((d,di)=>{
+      const p=`photos.${pi}.details.${di}`;
+      return `<div class="xrow"><div class="row">
+        ${cFld(t('c.photos.detail'),cTxtIn(p+'.text',t('c.photos.detailPh')))}
+        ${cFld(t('c.photos.link'),`<select class="in" data-ck="${p}.item"><option value="-1">${esc(t('c.photos.nolink'))}</option>${CS.items.map((it,i)=>`<option value="${i}">${esc((i+1)+' — '+cItemLabel(it))}</option>`).join('')}</select>`)}
+        <div class="f"><span>&nbsp;</span><button class="rm" type="button" data-crmd="${pi}.${di}" aria-label="×">×</button></div>
+      </div></div>`;
+    }).join('');
+    return `<div class="blk" style="box-shadow:none">
+      <div class="bh"><b>${esc(ph.name||('Photo '+(pi+1)))}</b><button class="rm" type="button" data-crmph="${pi}" aria-label="${esc(t('c.photos.rm'))}">×</button></div>
+      <img class="cthumb" src="${ph.dataUrl}" alt="">
+      ${dets}
+      ${ph.details.length<10?`<button class="btn small" type="button" data-cact="addDetail" data-i="${pi}">${t('c.photos.addDetail')}</button>`:`<p class="hint">${t('c.photos.maxDetail')}</p>`}
+    </div>`;
+  }).join('');
+  return `<section class="blk"><div class="bh"><h2>${t('c.photos.title')}</h2><span class="sum" data-cout="c.photoCount"></span></div><div class="bb">
+    <p class="hint">${t('c.photos.hint')}</p>
+    <p class="hint" data-cout="c.photoWarn" style="color:var(--danger)"></p>
+    ${CS.photos.length<10?`<input id="cPhotoInput" type="file" accept="image/*" multiple class="in" style="margin-bottom:12px">`:''}
+    <div class="pgrid">${cards||`<p class="hint">${t('c.photos.empty')}</p>`}</div>
+  </div></section>`;
+}
+function cSecMats(){
+  const rows=CS.materials.map((m,i)=>{
+    const p=`materials.${i}`;
+    return `<div class="item"><div class="row">
+      ${cFld(t('mat.name'),cTxtIn(p+'.name'))}
+      ${cFld(t('mat.qty'),cNumIn(p+'.qty'))}
+      ${cFld(t('mat.unit'),`<select class="in" data-ck="${p}.unit">${MAT_UNITS.map(u=>`<option value="${u[0]}">${esc(unitName(u[0]))}</option>`).join('')}</select>`)}
+      ${cFld(t('mat.cpu'),cNumIn(p+'.cost'))}
+      <div class="f"><span>${t('mat.total')}</span>${cOut('c:mat.'+i)}</div>
+      <div class="f"><span>&nbsp;</span><button class="rm" type="button" data-crm="${p}" aria-label="${esc(t('mat.rm'))}">×</button></div>
+    </div></div>`;
+  }).join('');
+  return `<section class="blk"><div class="bh"><h2>${t('c.mats.title')}</h2><div style="display:flex;gap:10px;align-items:center"><span class="sum" data-cout="c.matTotal"></span><button class="btn small" type="button" data-cact="addMat">${t('c.mats.add')}</button></div></div><div class="bb">
+    <p class="hint">${t('c.mats.hint')}</p>${rows}</div></section>`;
+}
+function cSecClient(){
+  return `<section class="blk"><div class="bh"><h2>${t('c.client.title')}</h2></div><div class="bb">
+    <p class="hint">${t('c.client.hint')}</p>
+    <div class="row">${cFld(t('qd.cname'),cTxtIn('client.name'))}${cFld(t('qd.addr'),cTxtIn('client.address'))}</div>
+    ${cFld(t('qd.terms'),'<textarea class="in" data-ck="terms"></textarea>')}
+  </div></section>`;
+}
+function cSecProfile(){
+  return `<section class="blk"><div class="bh"><h2>${t('c.prof.title')}</h2></div><div class="bb">
+    <p class="hint">${t('c.prof.hint')}</p>
+    <div class="row">
+      ${cFld(t('c.prof.name'),cTxtIn('profileName',t('c.prof.namePh')))}
+      <div class="f"><span>&nbsp;</span><div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn small" type="button" data-cact="saveProfile">${t('c.prof.save')}</button>
+        <button class="btn small" type="button" data-cact="loadProfile">${t('c.prof.load')}</button>
+        <button class="btn small" type="button" data-cact="delProfile">${t('c.prof.del')}</button>
+      </div></div>
+    </div>
+    <p class="hint" data-cout="c.profMsg"></p>
+    <h4>${t('c.prof.savedDocs')}</h4>
+    <div id="cSavedDocs"></div>
+    <div id="cDocView" style="margin-top:12px"></div>
+  </div></section>`;
+}
+function cRender(){
+  const el=document.getElementById('c-body');
+  if(!el)return;
+  el.innerHTML=[cSecRates(),cSecItems(),cSecTasks(),cSecMeas(),cSecPhotos(),cSecMats(),cSecClient(),cSecProfile()].join('');
+}
+
+/* ---------- carpentry milestones ---------- */
+let cMS={rows:[],sumPct:0,covered:0,warn:''};
+function cCalcMs(){
+  const r=cMilestones(CC?CC.total:0,CS.milestones);
+  cMS={rows:r.rows,sumPct:r.sumPct,covered:r.covered,warn:r.warn,total:CC?CC.total:0};
+}
+let cMsCount=-1;
+function cRenderMs(){
+  const el=document.getElementById('c-msList');if(!el)return;
+  el.innerHTML=CS.milestones.map((m,i)=>`<div class="item"><div class="row">
+    ${cFld(t('ms.name'),cTxtIn('milestones.'+i+'.name'))}
+    ${cFld(t('ms.type'),`<select class="in" data-ck="milestones.${i}.mode"><option value="%"> ${t('ms.pct')}</option><option value="$">${t('ms.flat')}</option></select>`)}
+    ${cFld(t('ms.value'),cNumIn('milestones.'+i+'.value'))}
+    ${cFld(t('ms.due'),cTxtIn('milestones.'+i+'.due',t('ms.dueph')))}
+    <div class="f"><span>${t('ms.amount')}</span><b class="amt" data-cout="c:ms.${i}"></b></div>
+    <div class="f"><span>&nbsp;</span><button class="rm" type="button" data-crmms="${i}" aria-label="${esc(t('ms.rm'))}">×</button></div>
+  </div></div>`).join('')||`<p class="hint">${t('ms.empty')}</p>`;
+  el.querySelectorAll('[data-ck]').forEach(inp=>{
+    const k=inp.dataset.ck,v=cGetDisp(k);
+    if(inp.tagName==='SELECT')inp.value=String(v==null?'':v);
+    else inp.value=v==null?'':String(v);
+  });
+}
+function cSyncMs(){
+  if(!document.getElementById('c-msList'))return;
+  if(CS.milestones.length!==cMsCount){cMsCount=CS.milestones.length;cRenderMs()}
+  cCalcMs();
+  const O={};
+  cMS.rows.forEach((r,i)=>{O['c:ms.'+i]=money(r.amt)});
+  O['c.msCovered']=`${t('u.mscovered')} ${money(cMS.covered)} ${t('u.msof')} ${money(cMS.total)}.`;
+  O['c.msWarn']=cMS.warn==='over'?`${t('u.mswarnover')} ${n(cMS.sumPct)}% — over 100%. ${t('u.msfixed')}`
+    :cMS.warn==='under'?`${t('u.mswarnover')} ${n(cMS.sumPct)}% — ${money(Math.max(0,cMS.total-cMS.covered))} ${t('u.mswarnunder')}`:'';
+  Object.keys(O).forEach(k=>{
+    const el=document.querySelector('[data-cout="'+k+'"]');
+    if(el&&el.textContent!==O[k])el.textContent=O[k];
+  });
+}
+
+/* ---------- carpentry documents ---------- */
+function cDocNum(kind){
+  const d=new Date();
+  const ymd=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
+  return (kind==='q'?'QC-':kind==='i'?'INVC-':'RC-')+ymd+'-'+String(CS.docNos[kind]||1).padStart(3,'0');
+}
+function cGroups(){
+  const groups=[];
+  ['trim','door','builtin','custom'].forEach(k=>{
+    const lines=[];
+    CC.items.forEach((e,i)=>{
+      if(e.it.kind!==k)return;
+      lines.push({d:(i+1)+'. '+cItemLabel(e.it),s:`${n(e.it.qty)} ${cUnitName(cItemUnit(e.it))} × ${money(e.rt)}`,a:e.amt,why:e.it.note});
+    });
+    if(lines.length)groups.push({title:t('c.kind.'+k),lines,sub:cR2(lines.reduce((s,l)=>s+l.a,0))});
+  });
+  if(CC.tasks.length){
+    const lr=+CS.rates.labor||0;
+    const tlines=CC.tasks.map((e,i)=>{
+      const tk=e.task;
+      let sub=tk.mode==='hourly'?`${n(tk.hours)} ${t('unit.hour')} × ${money(lr)}`
+        :tk.mode==='flat'?t('c.task.modeFlat')
+        :`${n(tk.qty)} × ${money(tk.rate)}`;
+      if(tk.meas&&tk.meas.length)sub+=' · '+tk.meas.map(m=>`${m.label||t('c.task.mLabel')}: ${n(m.qty)} ${cUnitName(m.unit)}`).join(', ');
+      if(tk.photo>=0&&CS.photos[tk.photo])sub+=` · ${t('c.task.photo')}: ${CS.photos[tk.photo].name||('Photo '+(tk.photo+1))}`;
+      return{d:(i+1)+'. '+(tk.desc||t('c.task.untitled'))+' ('+cTaskTypeName(tk.type)+')',s:sub,a:e.amt,why:tk.notes};
+    });
+    groups.push({title:t('c.doc.tasks'),lines:tlines,sub:cR2(tlines.reduce((s,l)=>s+l.a,0))});
+  }
+  if(CC.matTotal>0)groups.push({title:t('c.doc.mats'),lines:CS.materials.map((m,i)=>({d:m.name||t('mat.name')+' '+(i+1),s:`${n(m.qty)} ${unitName(m.unit)} × ${money(m.cost)}`,a:CC.mats[i]})),sub:CC.matTotal});
+  return groups;
+}
+function cGroupsHtml(groups,withWhy){
+  return groups.map(g=>`<div class="qgrp"><div class="qgh"><span>${esc(g.title)}</span><b>${money(g.sub)}</b></div>${g.lines.map(l=>`<div class="ql${l.x?' x':''}"><span class="d">${esc(l.d)}</span><span class="a">${money(l.a)}</span>${l.s?`<span class="s">${esc(l.s)}</span>`:''}${withWhy&&l.why?`<span class="why">${esc(t('doc.why')+l.why)}</span>`:''}</div>`).join('')}</div>`).join('');
+}
+function cDocHead(title,no,dateStr,extraMeta){
+  const c=CS.company;
+  const contact=[c.phone,c.email,c.license].filter(Boolean).map(esc).join(' · ');
+  return `<div class="qh"><div class="qco"><div class="logo big" style="width:64px;height:64px">${cLogoHtml()}</div><div><h2>${esc(c.name||'Your Company')}</h2>${contact?`<p>${contact}</p>`:''}</div></div>
+    <div class="qno"><p>${esc(title)}</p><b>${esc(no)}</b><p>${esc(dateStr)}</p>${extraMeta||''}</div></div>
+  <div class="qmeta">
+    <div><span>${t('c.doc.prep')}</span> ${esc(CS.client.name||t('doc.customer'))}</div>
+    <div><span>${t('c.doc.prop')}</span> ${esc(CS.client.address||t('doc.noaddr'))}</div>
+  </div>`;
+}
+function cRenderEstimate(){
+  const groups=cGroups();
+  const d=new Date(CS.qdate||Date.now()), until=new Date(d.getTime()+30*864e5);
+  const fmt=x=>x.toLocaleDateString(LOC(),{year:'numeric',month:'long',day:'numeric'});
+  const no=cDocNum('q');
+  CS._estNo=no;
+  let extra='';
+  if(CS.measurements.length){
+    extra+=`<div class="qgrp"><div class="qgh"><span>${esc(t('c.doc.measurements'))}</span><b></b></div>${CS.measurements.map(m=>`<div class="ql"><span class="d">${esc(m.label||'—')}</span><span class="a">${n(m.qty)} ${esc(cUnitName(m.unit))}</span>${m.note?`<span class="s">${esc(m.note)}</span>`:''}</div>`).join('')}</div>`;
+  }
+  if(CS.photos.length){
+    extra+=`<div class="qgrp"><div class="qgh"><span>${esc(t('c.doc.photos'))}</span><b></b></div>${CS.photos.map(ph=>{
+      const caps=ph.details.filter(x=>x.text).map(x=>esc(x.text)).join(' · ');
+      return `<div style="display:flex;gap:10px;align-items:center;margin-bottom:8px"><img class="pthumb" src="${ph.dataUrl}" alt=""><div><b>${esc(ph.name||'')}</b>${caps?`<div style="font-size:13px;color:var(--muted)">${caps}</div>`:''}</div></div>`;
+    }).join('')}</div>`;
+  }
+  return `<article class="qdoc">
+    ${cDocHead(t('c.doc.estimate'),no,fmt(d),`<p>${t('c.doc.valid')} ${esc(fmt(until))}</p>`)}
+    ${cGroupsHtml(groups,true)||`<p class="hint" style="margin-top:18px">${t('doc.empty')}</p>`}
+    ${extra}
+    <div class="qtotal"><span>${t('c.doc.total')}</span><b>${money(CC.total)}</b></div>
+    <p class="qterms">${esc(CS.terms)}</p>
+    <div class="qdep"><span>${t('c.doc.deposit')}</span><b>$ __________</b></div>
+    <div class="qdep"><span>${t('c.doc.baldue')}</span><b>$ __________</b></div>
+    <div class="qsign"><p><b>${t('c.doc.accept')}</b></p>
+    <p>${t('c.doc.sign')}: <span class="line"></span>&nbsp;&nbsp;${t('c.doc.date')}: <span class="line" style="min-width:140px"></span></p>
+    <p>${t('c.doc.pname')}: <span class="line"></span></p></div>
+  </article>`;
+}
+function cEstimateText(){
+  const T=[],c=CS.company;
+  T.push(c.name||'Your Company');
+  const contact=[c.phone,c.email,c.license].filter(Boolean).join(' | ');
+  if(contact)T.push(contact);
+  T.push('',`${t('c.doc.estimate')} ${CS._estNo||''}`,'',`${t('c.doc.prep')}: ${CS.client.name||t('doc.customer')}`,`${t('c.doc.prop')}: ${CS.client.address||t('doc.noaddr')}`,'');
+  cGroups().forEach(g=>{
+    T.push(`${g.title.toUpperCase()}  ${money(g.sub)}`);
+    g.lines.forEach(l=>{T.push(`  ${l.d}${l.s?' ('+l.s+')':''}: ${money(l.a)}`);if(l.why)T.push(`      ${t('doc.why')}${l.why}`)});
+    T.push('');
+  });
+  T.push(`${t('c.doc.total').toUpperCase()}  ${money(CC.total)}`,'',CS.terms,'',
+    `${t('c.doc.deposit')}: $__________`,`${t('c.doc.baldue')}: $__________`,'',
+    t('c.doc.accept'),`${t('c.doc.sign')}: ______________________________  ${t('c.doc.date')}: ____________`,`${t('c.doc.pname')}: ______________________________`);
+  return T.join('\n');
+}
+function cRenderInvoice(){
+  const groups=cGroups();
+  const ms=cMS.rows.map((r,i)=>`<div class="ql"><span class="d">${t('doc.mstone')} ${i+1}: ${esc(r.m.name)}${r.m.due?` — ${esc(r.m.due)}`:''}</span><span class="a">${money(r.amt)}</span><span class="s">${r.isFlat?money(r.v)+' '+t('doc.msflat'):n(r.v)+t('doc.mspct')}</span></div>`).join('');
+  const d=new Date(CS.inDate||Date.now());
+  const no=cDocNum('i');
+  CS._invNo=no;
+  return `<article class="qdoc">
+    ${cDocHead(t('c.doc.invoice'),no,d.toLocaleDateString(LOC(),{year:'numeric',month:'long',day:'numeric'}),CS._estNo?`<p>${t('c.doc.estimate')} ${esc(CS._estNo)}</p>`:'')}
+    ${cGroupsHtml(groups,false)}
+    <div class="qgrp"><div class="qgh"><span>${esc(t('doc.ms'))}</span><b>${money(cMS.covered)}</b></div>${ms||`<p class="hint">${t('doc.nomsset')}</p>`}</div>
+    <div class="qtotal"><span>${t('c.doc.total')}</span><b>${money(CC.total)}</b></div>
+    <p class="qterms">${esc(CS.terms)}</p>
+  </article>`;
+}
+function cRenderReceipt(){
+  const r=cReceiptCalc(CC.total,CS.payments);
+  const rows=CS.payments.map(p=>`<div class="ql"><span class="d">${esc(p.date||'')} · ${esc(p.method||t('c.doc.method'))}</span><span class="a">${money(cNum(p.amount))}</span>${p.note?`<span class="s">${esc(p.note)}</span>`:''}</div>`).join('');
+  const d=new Date(CS.rDate||Date.now());
+  const no=cDocNum('r');
+  CS._recNo=no;
+  const stamp=(r.balance<=0&&r.paid>0)?`<div class="paidstamp">${esc(t('c.doc.paidfull'))}</div>`:'';
+  return `<article class="qdoc">
+    ${cDocHead(t('c.doc.receipt'),no,d.toLocaleDateString(LOC(),{year:'numeric',month:'long',day:'numeric'}),CS._invNo?`<p>${t('c.doc.invref')} ${esc(CS._invNo)}</p>`:'')}
+    <div class="qgrp"><div class="qgh"><span>${esc(t('c.doc.payments'))}</span><b>${money(r.paid)}</b></div>${rows||`<p class="hint">${t('c.pay.empty')}</p>`}</div>
+    <div class="qtotal"><span>${t('c.doc.paid')}</span><b>${money(r.paid)}</b></div>
+    <div class="qtotal"><span>${t('c.doc.balance')}</span><b>${money(r.balance)}</b></div>
+    ${stamp}
+    <p class="qterms">${esc(CS.terms)}</p>
+  </article>`;
+}
+function cSaveDoc(kind,html,total,no){
+  CS.savedDocs.push({kind,no,date:Date.now(),total,html});
+  if(CS.savedDocs.length>30)CS.savedDocs=CS.savedDocs.slice(-30);
+}
+function cProfiles(){try{return JSON.parse(localStorage.getItem(CPROF)||'{}')}catch(e){return{}}}
+function cPutProfiles(p){try{localStorage.setItem(CPROF,JSON.stringify(p));return true}catch(e){return false}}
+
+/* ---------- carpentry update ---------- */
+function cUpdate(){
+  CC=cCalc();
+  const O={};
+  O['total']=money(CC.total);
+  const ks={trim:'sum.trim',doors:'sum.doors',builtins:'sum.builtins',custom:'sum.custom'};
+  Object.keys(ks).forEach(k=>{O[ks[k]]=money(cR2(CC.items.filter(e=>e.it.kind===k).reduce((s,e)=>s+e.amt,0)))});
+  O['sum.materials']=money(CC.matTotal);
+  O['sum.tasks']=money(CC.tasksTotal);
+  O['c.itemsTotal']=money(CC.itemsTotal);
+  O['c.matTotal']=money(CC.matTotal);
+  O['c.tasksTotal']=money(CC.tasksTotal);
+  O['c.photoCount']=CS.photos.length+' / 10';
+  O['c.profMsg']=CS._profMsg||'';
+  CC.items.forEach((e,i)=>{O['c:item.'+i]=money(e.amt)});
+  CC.tasks.forEach((e,i)=>{O['c:task.'+i]=money(e.amt)});
+  CS.materials.forEach((m,i)=>{O['c:mat.'+i]=money(CC.mats[i])});
+
+  document.querySelectorAll('[data-ck]').forEach(el=>{
+    if(el===document.activeElement)return;
+    const k=el.dataset.ck, v=cGetDisp(k);
+    if(el.type==='checkbox')el.checked=!!v;
+    else if(el.tagName==='SELECT')el.value=(v==null)?'':String(v);
+    else if(el.type==='number')el.value=(v==null)?'':cFmtNum(v,k);
+    else if(el.tagName==='TEXTAREA')el.value=(v==null)?'':String(v);
+    else el.value=(v==null)?'':String(v);
+  });
+  document.querySelectorAll('[data-cck]').forEach(el=>{
+    if(el===document.activeElement)return;
+    const cv=CS.company[el.dataset.cck];
+    const sv=cv==null?'':String(cv);
+    if(el.value!==sv)el.value=sv;
+  });
+  document.querySelectorAll('[data-cout]').forEach(el=>{
+    const k=el.dataset.cout;
+    const tx=O[k]!=null?O[k]:'';
+    if(el.textContent!==tx)el.textContent=tx;
+  });
+  document.querySelectorAll('[data-cshowif]').forEach(el=>{el.hidden=!cCond(el.dataset.cshowif)});
+  if(CS.estOn){const ed=document.getElementById('c-estimatedoc');if(ed)ed.innerHTML=cRenderEstimate()}
+  cSyncMs();
+  if(CS.invOn){const idd=document.getElementById('c-invdoc');if(idd)idd.innerHTML=cRenderInvoice()}
+  if(CS.recOn){const rd=document.getElementById('c-rcdoc');if(rd)rd.innerHTML=cRenderReceipt()}
+  const sd=document.getElementById('cSavedDocs');
+  if(sd){
+    const kindName={est:t('c.doc.estimate'),inv:t('c.doc.invoice'),rec:t('c.doc.receipt')};
+    sd.innerHTML=CS.savedDocs.length?CS.savedDocs.map((d,i)=>`<div class="xrow"><div class="row" style="align-items:center">
+      <div class="f"><span>${esc(kindName[d.kind]||d.kind)} · ${esc(d.no)}</span><b>${esc(new Date(d.date).toLocaleDateString(LOC()))} — ${money(d.total)}</b></div>
+      <div class="f"><span>&nbsp;</span><div style="display:flex;gap:8px">
+        <button class="btn small" type="button" data-cact="viewDoc" data-i="${i}">${t('c.prof.view')}</button>
+        <button class="btn small" type="button" data-cact="printSaved" data-i="${i}">${t('c.prof.print')}</button>
+      </div></div>
+    </div></div>`).join(''):`<p class="hint">${t('c.prof.empty')}</p>`;
+  }
+  cSave();
+  cRenderPay();
+  cCompanyUI();
+}
+/* ---------- carpentry events ---------- */
+function cSetFromEl(el,k){
+  let v;
+  if(el.type==='checkbox')v=el.checked;
+  else if(el.type==='number'){
+    const s=el.value;
+    if(s===''){v=el.hasAttribute('data-nullable')?null:0}
+    else{v=parseFloat(s);if(!isFinite(v)||v<0)v=0}
+  }
+  else v=el.value;
+  cSetP(k,v);
+}
+function cOnField(e){
+  const el=e.target;
+  if(el.id==='cPhotoInput'){if(e.type==='change'){cHandlePhotos(el.files);el.value=''}return}
+  const ck2=el.dataset&&el.dataset.cck;
+  if(ck2){CS.company[ck2]=el.value;cUpdate();return}
+  const k=el.dataset&&el.dataset.ck;
+  if(!k)return;
+  cSetFromEl(el,k);
+  if(/\.mode$/.test(k))cRender();
+  cUpdate();
+}
+document.addEventListener('input',cOnField);
+document.addEventListener('change',cOnField);
+
+function cHandlePhotos(files){
+  const room=Math.max(0,10-CS.photos.length);
+  Array.prototype.slice.call(files||[],0,room).forEach(f=>{
+    const rd=new FileReader();
+    rd.onload=()=>{
+      const img=new Image();
+      img.onload=()=>{
+        const sc=Math.min(1,1024/Math.max(img.width,img.height,1));
+        const c=document.createElement('canvas');
+        c.width=Math.max(1,Math.round(img.width*sc));c.height=Math.max(1,Math.round(img.height*sc));
+        c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+        CS.photos.push({name:(f.name||'photo').replace(/\.[^.]+$/,''),dataUrl:c.toDataURL('image/jpeg',0.65),details:[]});
+        cRender();cUpdate();
+      };
+      img.src=rd.result;
+    };
+    rd.readAsDataURL(f);
+  });
+}
+function cPrintHtml(html){
+  const pa=document.getElementById('printArea');
+  pa.innerHTML=html;
+  document.body.classList.add('printing');
+  window.print();
+}
+window.addEventListener('afterprint',()=>document.body.classList.remove('printing'));
+
+const CACT={
+  startCarp(){$('#landing').hidden=true;$('#app').hidden=false;window.scrollTo(0,0);cUpdate()},
+  home(){$('#app').hidden=true;$('#landing').hidden=false;window.scrollTo(0,0)},
+  rmLogo(){CS.company.logo='';cUpdate()},
+  addCustomRate(){CS.customRates.push({name:'',unit:'ln ft',rate:0});cRender();cUpdate()},
+  addItem(){CS.items.push(cMkItem('trim'));cRender();cUpdate()},
+  addTask(){CS.tasks.push(cMkTask());cRender();cUpdate()},
+  addTaskMeas(b){const tk=CS.tasks[+b.dataset.i];if(tk){tk.meas.push(cMkTMeas());cRender();cUpdate()}},
+  taskMeasToQty(b){const tk=CS.tasks[+b.dataset.i];if(tk){tk.qty=cTaskMeasSum(tk);cUpdate()}},
+  addTaskType(){const el=document.getElementById('cNewTaskType');const nm=el?el.value.trim():'';if(nm&&CS.customTaskTypes.indexOf(nm)<0)CS.customTaskTypes.push(nm);cRender();cUpdate()},
+  addMeas(){CS.measurements.push(cMkMeas());cRender();cUpdate()},
+  measToItem(b){
+    const m=CS.measurements[+b.dataset.i];if(!m)return;
+    const ti=+m.target;
+    if(ti>=0&&CS.items[ti]){CS.items[ti].qty=cNum(m.qty);cRender();cUpdate()}
+  },
+  addDetail(b){const ph=CS.photos[+b.dataset.i];if(ph&&ph.details.length<10){ph.details.push(cMkDetail());cRender();cUpdate()}},
+  addMat(){CS.materials.push(cMkMat());cRender();cUpdate()},
+  addMs(){CS.milestones.push({name:t('ms.new'),mode:'%',value:0,due:''});cUpdate()},
+  addPay(){CS.payments.push(cMkPay());cRenderPay();cUpdate()},
+  estimate(){
+    CS.docNos.q=(CS.docNos.q||0)+1;CS.qdate=Date.now();CS.estOn=true;
+    document.getElementById('c-estimate').hidden=false;
+    cUpdate();
+    cSaveDoc('est',document.getElementById('c-estimatedoc').innerHTML,CC.total,CS._estNo);
+    cUpdate();
+    document.getElementById('c-estimate').scrollIntoView({block:'start'});
+  },
+  invoice(){
+    CS.docNos.i=(CS.docNos.i||0)+1;CS.inDate=Date.now();CS.invOn=true;
+    document.getElementById('c-invoice').hidden=false;
+    cUpdate();
+    cSaveDoc('inv',document.getElementById('c-invdoc').innerHTML,CC.total,CS._invNo);
+    cUpdate();
+    document.getElementById('c-invoice').scrollIntoView({block:'start'});
+  },
+  receipt(){
+    CS.docNos.r=(CS.docNos.r||0)+1;CS.rDate=Date.now();CS.recOn=true;
+    document.getElementById('c-receipt').hidden=false;
+    cUpdate();
+    cSaveDoc('rec',document.getElementById('c-rcdoc').innerHTML,CC.total,CS._recNo);
+    cUpdate();
+    document.getElementById('c-receipt').scrollIntoView({block:'start'});
+  },
+  toInvoice(){document.getElementById('c-estimate').hidden=true;CACT.invoice()},
+  toReceipt(){document.getElementById('c-invoice').hidden=true;CACT.receipt()},
+  backEst(){document.getElementById('c-estimate').hidden=true},
+  backInv(){document.getElementById('c-invoice').hidden=true},
+  backRec(){document.getElementById('c-receipt').hidden=true},
+  resetEst(){CS.estOn=false;document.getElementById('c-estimate').hidden=true;cUpdate()},
+  resetInv(){CS.invOn=false;document.getElementById('c-invoice').hidden=true;cUpdate()},
+  resetRec(){CS.recOn=false;CS.payments=[];document.getElementById('c-receipt').hidden=true;cRender();cUpdate()},
+  copyDoc(b){
+    const map={est:['c-estimatedoc','cCopyEstBtn',cEstimateText],inv:['c-invdoc','cCopyInvBtn',null],rec:['c-rcdoc','cCopyRecBtn',null]};
+    const m=map[b.dataset.doc];if(!m)return;
+    const btn=document.getElementById(m[1]);
+    const flash=(key)=>{if(btn){btn.textContent=t(key);setTimeout(()=>{if(btn)btn.textContent=t('c.tools.copy')},1800)}};
+    const text=m[2]?m[2]():document.getElementById(m[0]).innerText;
+    cCopyText(text,()=>flash('c.tools.copied'),()=>cCopyManual(text));
+  },
+  dlEst(){downloadDoc('estimate-'+(CS._estNo||'estimate')+'.docx',docHtml(t('c.doc.estimate'),CS._estNo||'',new Date(CS.qdate||Date.now()).toLocaleDateString(LOC()),`${esc(CS.company.name||'')}<br>${t('c.doc.prep')}: ${esc(CS.client.name||'')}`,cGroups(),`<h2>${t('c.doc.total').toUpperCase()} — ${money(CC.total)}</h2><p>${esc(CS.terms)}</p><p>${t('c.doc.deposit')}: $__________<br>${t('c.doc.baldue')}: $__________</p><p><b>${t('c.doc.accept')}</b></p><p>${t('c.doc.sign')}: ______________________________&nbsp;&nbsp;${t('c.doc.date')}: ____________<br>${t('c.doc.pname')}: ______________________________</p>`))},
+  dlInv(){downloadDoc('invoice-'+(CS._invNo||'invoice')+'.docx',docHtml(t('c.doc.invoice'),CS._invNo||'',new Date(CS.inDate||Date.now()).toLocaleDateString(LOC()),`${esc(CS.company.name||'')}<br>${t('c.doc.prep')}: ${esc(CS.client.name||'')}`,cGroups(),`<h2>${t('doc.ms')}</h2><table border="1" cellpadding="6" cellspacing="0">${cMS.rows.map((r,i)=>`<tr><td>${t('doc.mstone')} ${i+1}: ${esc(r.m.name)}${r.m.due?` — ${esc(r.m.due)}`:''}</td><td align="right">${money(r.amt)}</td></tr>`).join('')}</table><h2>${t('c.doc.total').toUpperCase()} — ${money(CC.total)}</h2><p>${esc(CS.terms)}</p>`))},
+  dlRec(){const r=cReceiptCalc(CC.total,CS.payments);downloadDoc('receipt-'+(CS._recNo||'receipt')+'.docx',docHtml(t('c.doc.receipt'),CS._recNo||'',new Date(CS.rDate||Date.now()).toLocaleDateString(LOC()),`${esc(CS.company.name||'')}<br>${t('c.doc.prep')}: ${esc(CS.client.name||'')}`,[{title:t('c.doc.payments'),lines:CS.payments.map(p=>({d:(p.date||'')+' · '+(p.method||t('c.doc.method')),s:p.note||'',a:cNum(p.amount)})),sub:r.paid}],`<h2>${t('c.doc.paid').toUpperCase()} — ${money(r.paid)}</h2><h2>${t('c.doc.balance').toUpperCase()} — ${money(r.balance)}</h2><p>${esc(CS.terms)}</p>`))},
+  printEst(){cPrintHtml(document.getElementById('c-estimatedoc').innerHTML)},
+  printInv(){cPrintHtml(document.getElementById('c-invdoc').innerHTML)},
+  printRec(){cPrintHtml(document.getElementById('c-rcdoc').innerHTML)},
+  printSaved(b){const d=CS.savedDocs[+b.dataset.i];if(d)cPrintHtml(d.html)},
+  viewDoc(b){
+    const d=CS.savedDocs[+b.dataset.i];if(!d)return;
+    const v=document.getElementById('cDocView');
+    v.innerHTML=`<div class="bh"><h2>${esc(d.no)}</h2><button class="rm" type="button" data-cact="closeDocView" aria-label="×">×</button></div>`+d.html;
+    v.scrollIntoView({block:'start'});
+  },
+  closeDocView(){document.getElementById('cDocView').innerHTML=''},
+  saveProfile(){
+    const name=(CS.profileName||'').trim();
+    if(!name){CS._profMsg=t('c.prof.noname');cUpdate();return}
+    const p=cProfiles();
+    p[name]={savedAt:Date.now(),rates:CS.rates,customRates:CS.customRates,items:CS.items,tasks:CS.tasks,customTaskTypes:CS.customTaskTypes,materials:CS.materials,terms:CS.terms,savedDocs:CS.savedDocs};
+    if(cPutProfiles(p)){CS._profMsg=t('c.prof.saved')}else{CS._profMsg=t('c.photos.quota')}
+    cUpdate();
+  },
+  loadProfile(){
+    const name=(CS.profileName||'').trim();
+    const p=cProfiles()[name];
+    if(!p){CS._profMsg=t('c.prof.noname');cUpdate();return}
+    ['rates','customRates','items','tasks','customTaskTypes','materials','terms','savedDocs'].forEach(k=>{if(p[k]!==undefined)CS[k]=p[k]});
+    CS._profMsg=t('c.prof.loaded');
+    cMsCount=-1;cRender();cUpdate();
+  },
+  delProfile(){
+    const name=(CS.profileName||'').trim();
+    const p=cProfiles();
+    if(p[name]){delete p[name];cPutProfiles(p);CS._profMsg=t('c.prof.deleted')}else{CS._profMsg=t('c.prof.noname')}
+    cUpdate();
+  }
+};
+function cRenderPay(){
+  const el=document.getElementById('c-payList');if(!el)return;
+  const ae=document.activeElement;
+  if(ae&&el.contains(ae)){
+    // Typing inside the payment list: never rebuild mid-keystroke — replacing
+    // the focused field drops the mobile keyboard. Just sync the other values.
+    el.querySelectorAll('[data-ck]').forEach(inp=>{
+      if(inp===ae)return;
+      const kk=inp.dataset.ck,v=cGetP(kk);
+      inp.value=v==null?'':String(v);
+    });
+    return;
+  }
+  el.innerHTML=CS.payments.map((p,i)=>{
+    const k=`payments.${i}`;
+    return `<div class="item"><div class="row">
+      ${cFld(t('c.pay.date'),`<input class="in" type="date" data-ck="${k}.date">`)}
+      ${cFld(t('c.pay.method'),cTxtIn(k+'.method',t('c.pay.methodPh')))}
+      ${cFld(t('c.pay.amount'),cNumIn(k+'.amount'))}
+      ${cFld(t('c.pay.note'),cTxtIn(k+'.note'))}
+      <div class="f"><span>&nbsp;</span><button class="rm" type="button" data-crm="${k}" aria-label="${esc(t('c.pay.rm'))}">×</button></div>
+    </div></div>`;
+  }).join('')||`<p class="hint">${t('c.pay.empty')}</p>`;
+  el.querySelectorAll('[data-ck]').forEach(inp=>{
+    const kk=inp.dataset.ck,v=cGetP(kk);
+    inp.value=v==null?'':String(v);
+  });
+}
+/* include payment editor in update cycle */
+/* (cRenderPay is called at the end of cUpdate) */
+
+document.addEventListener('click',e=>{
+  const lg=e.target.closest('[data-lang]');
+  if(lg){cSetLang(lg.dataset.lang);return}
+  const b=e.target.closest('[data-cact]');
+  if(b&&CACT[b.dataset.cact]){CACT[b.dataset.cact](b);return}
+  const rmm=e.target.closest('[data-crmms]');
+  if(rmm){CS.milestones.splice(+rmm.dataset.crmms,1);cUpdate();return}
+  const rmd=e.target.closest('[data-crmd]');
+  if(rmd){const a=rmd.dataset.crmd.split('.');const ph=CS.photos[+a[0]];if(ph)ph.details.splice(+a[1],1);cRender();cUpdate();return}
+  const rmph=e.target.closest('[data-crmph]');
+  if(rmph){const pi=+rmph.dataset.crmph;CS.photos.splice(pi,1);CS.tasks.forEach(tk=>{if(tk.photo===pi)tk.photo=-1;else if(tk.photo>pi)tk.photo--});cRender();cUpdate();return}
+  const rm=e.target.closest('[data-crm]');
+  if(rm){
+    const a=rm.dataset.crm.split('.'), idx=+a.pop();
+    cGetP(a.join('.')).splice(idx,1);
+    cRender();cUpdate();return;
+  }
+});
+
+const _logoFile=document.getElementById('logoFile');
+if(_logoFile)_logoFile.addEventListener('change',e=>{
+  const f=e.target.files&&e.target.files[0];
+  if(!f)return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    const img=new Image();
+    img.onload=()=>{
+      const sc=Math.min(1,320/Math.max(img.width,img.height,1));
+      const c=document.createElement('canvas');
+      c.width=Math.max(1,Math.round(img.width*sc));c.height=Math.max(1,Math.round(img.height*sc));
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      CS.company.logo=c.toDataURL('image/png');
+      cUpdate();
+    };
+    img.src=rd.result;
+  };
+  rd.readAsDataURL(f);
+});
+
+/* ---------- start ---------- */
+cLoad();cRender();cApplyI18n();cUpdate();
+})();
+</script>
+</body>
+</html>
