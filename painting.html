@@ -495,12 +495,18 @@ function load(){try{
   if(typeof d.shareMsg==='string')S.shareMsg=d.shareMsg;
   if(typeof d.quoteEdit==='string')S.quoteEdit=d.quoteEdit;
   if(typeof d.recEdit==='string')S.recEdit=d.recEdit;
+  if(d.quoteOn)S.quoteOn=true;
+  if(d.invoiceOn)S.invoiceOn=true;
+  if(d.recOn)S.recOn=true;
+  if(+d.qdate>0)S.qdate=+d.qdate;
+  if(+d.inDate>0)S.inDate=+d.inDate;
+  if(+d.rDate>0)S.rDate=+d.rDate;
   if(d.base&&typeof d.base==='object')Object.assign(S.base,d.base);
   if(d.lang==='es'||d.lang==='en')S.lang=d.lang;
 }catch(e){}}
 let saveT=0;
 function save(){clearTimeout(saveT);saveT=setTimeout(()=>{try{
-  localStorage.setItem(STORE,JSON.stringify({company:S.company,zip:S.zip,overrides:S.overrides,coating:S.coating,terms:S.terms,qn:S.qn,milestones:S.milestones,inNo:S.inNo,payments:S.payments,recNo:S.recNo,shareMsg:S.shareMsg,quoteEdit:S.quoteEdit,recEdit:S.recEdit,base:S.base,lang:S.lang}));
+  localStorage.setItem(STORE,JSON.stringify({company:S.company,zip:S.zip,overrides:S.overrides,coating:S.coating,terms:S.terms,qn:S.qn,milestones:S.milestones,inNo:S.inNo,payments:S.payments,recNo:S.recNo,shareMsg:S.shareMsg,quoteEdit:S.quoteEdit,recEdit:S.recEdit,quoteOn:S.quoteOn,qdate:S.qdate,invoiceOn:S.invoiceOn,inDate:S.inDate,recOn:S.recOn,rDate:S.rDate,base:S.base,lang:S.lang}));
 }catch(e){}},400)}
 
 /* ---------- language ---------- */
@@ -1502,8 +1508,8 @@ const ACT={
   shareReceipt(){openShare('receipt')},
   editQuote(){qEditMode?exitEdit('quote'):enterEdit('quote')},
   editReceipt(){rEditMode?exitEdit('receipt'):enterEdit('receipt')},
-  resetQuoteEdit(){if(!S.quoteEdit&&!qEditMode)return;const b=document.querySelector('[data-act="resetQuoteEdit"]');if(!b.dataset.armed){b.dataset.armed='1';b.textContent=t('ed.confirm');setTimeout(()=>{if(b.dataset.armed){delete b.dataset.armed;b.textContent=t('ed.reset')}},4000);return}delete b.dataset.armed;b.textContent=t('ed.reset');S.quoteEdit='';if(qEditMode){qEditMode=false;const art=$('#qdoc article');if(art){art.contentEditable='false';art.style.outline=''}}setEditBtn('editQuote',false);save();update()},
-  resetReceiptEdit(){if(!S.recEdit&&!rEditMode)return;const b=document.querySelector('[data-act="resetReceiptEdit"]');if(!b.dataset.armed){b.dataset.armed='1';b.textContent=t('ed.confirm');setTimeout(()=>{if(b.dataset.armed){delete b.dataset.armed;b.textContent=t('ed.reset')}},4000);return}delete b.dataset.armed;b.textContent=t('ed.reset');S.recEdit='';if(rEditMode){rEditMode=false;const art=$('#recdoc article');if(art){art.contentEditable='false';art.style.outline=''}}setEditBtn('editReceipt',false);save();update()},
+  resetQuoteEdit(){if(!S.quoteEdit&&!qEditMode)return;const b=document.querySelector('[data-act="resetQuoteEdit"]');if(!b.dataset.armed){b.dataset.armed='1';b.textContent=t('ed.confirm');setTimeout(()=>{if(b.dataset.armed){delete b.dataset.armed;b.textContent=t('ed.reset')}},8000);return}delete b.dataset.armed;b.textContent=t('ed.reset');S.quoteEdit='';if(qEditMode){qEditMode=false;const art=$('#qdoc article');if(art){art.contentEditable='false';art.style.outline=''}}setEditBtn('editQuote',false);save();update()},
+  resetReceiptEdit(){if(!S.recEdit&&!rEditMode)return;const b=document.querySelector('[data-act="resetReceiptEdit"]');if(!b.dataset.armed){b.dataset.armed='1';b.textContent=t('ed.confirm');setTimeout(()=>{if(b.dataset.armed){delete b.dataset.armed;b.textContent=t('ed.reset')}},8000);return}delete b.dataset.armed;b.textContent=t('ed.reset');S.recEdit='';if(rEditMode){rEditMode=false;const art=$('#recdoc article');if(art){art.contentEditable='false';art.style.outline=''}}setEditBtn('editReceipt',false);save();update()},
   autoMaterials(){
     if(!C)return;
     const cov=350, coats=2;
