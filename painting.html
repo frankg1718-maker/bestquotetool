@@ -243,6 +243,7 @@ textarea.in{resize:vertical;min-height:84px;line-height:1.4}
       <div class="qtools">
         <button class="btn primary" type="button" data-act="copyQuote" id="copyBtn" data-i18n="q.copy">Copy quote text</button>
         <button class="btn" type="button" data-act="downloadQuote" data-i18n="q.word">Download Word</button>
+        <button class="btn" type="button" data-act="shareQuote" data-i18n="sh.share">Share</button>
         <span class="hint" data-i18n="q.hint">Paste it into an email or message, or download the Word file and open it in Google Docs to edit. The quote updates as you change the estimate.</span>
       </div>
       <textarea id="qtext" class="in" readonly hidden></textarea>
@@ -252,6 +253,7 @@ textarea.in{resize:vertical;min-height:84px;line-height:1.4}
       <div class="qtools">
         <button class="btn primary" type="button" data-act="copyInvoice" id="copyInvBtn" data-i18n="i.copy">Copy invoice text</button>
         <button class="btn" type="button" data-act="downloadInvoice" data-i18n="i.word">Download Word</button>
+        <button class="btn" type="button" data-act="shareInvoice" data-i18n="sh.share">Share</button>
         <span class="hint" data-i18n="i.hint">Milestones split the total into payments. The invoice updates as you change the estimate.</span>
       </div>
       <div class="blk" style="max-width:820px;margin:0 auto 12px">
@@ -267,6 +269,7 @@ textarea.in{resize:vertical;min-height:84px;line-height:1.4}
       <div class="qtools">
         <button class="btn primary" type="button" data-act="copyReceipt" id="copyRecBtn" data-i18n="r.copy">Copy receipt text</button>
         <button class="btn" type="button" data-act="downloadReceipt" data-i18n="i.word">Download Word</button>
+        <button class="btn" type="button" data-act="shareReceipt" data-i18n="sh.share">Share</button>
         <span class="hint" data-i18n="r.hint">Add each payment you receive — the deposit, a partial payment, the final payment. The receipt shows what was paid and the balance still due.</span>
       </div>
       <div class="blk" style="max-width:820px;margin:0 auto 12px">
@@ -304,6 +307,7 @@ en:{
 'sum.title':'Cost summary','sum.walls':'Walls','sum.ceiling':'Ceiling','sum.doors':'Doors','sum.windows':'Windows','sum.trim':'Trim and molding','sum.others':'Other items','sum.materials':'Materials','sum.total':'Total estimate',
 'act.quote':'Generate quote','act.invoice':'Generate invoice','act.receipt':'Generate receipt',
 'q.copy':'Copy quote text','q.copied':'Copied','q.copyfb':'Select and copy the text below','q.word':'Download Word','q.hint':'Paste it into an email or message, or download the Word file and open it in Google Docs to edit. The quote updates as you change the estimate.',
+'sh.share':'Share','sh.title':'Share this document','sh.msglabel':'Your message to the customer','sh.hint':'Words in {braces} fill in by themselves for each job: {customer} {doc} {company} {total} {phone}. Your message is remembered for next time.','sh.preview':'Preview','sh.send':'Share now','sh.dlinstead':'Just download instead','sh.cancel':'Cancel','sh.tpl':'Hi {customer} — here is your {doc} from {company}. Total: {total}. The Word file is attached so you can open and review it. Any questions, call me at {phone}.','sh.fallback':'Your file is downloading and your message was copied — open your email, attach the file and paste the message.',
 'r.copy':'Copy receipt text','r.hint':'Add each payment you receive — the deposit, a partial payment, the final payment. The receipt shows what was paid and the balance still due.','pay.title':'Payments received','pay.add':'+ Add payment','pay.empty':'No payments yet. Add the deposit or any payment you received.','pay.date':'Date','pay.method':'Method','pay.methodph':'Cash, check, card…','pay.amount':'Amount','pay.note':'Note','pay.noteph':'e.g. Deposit','pay.rm':'Remove payment',
 'i.copy':'Copy invoice text','i.copied':'Copied','i.copyfb':'Select and copy the text below','i.word':'Download Word','i.hint':'Milestones split the total into payments. The invoice updates as you change the estimate.',
 'ms.title':'Payment milestones','ms.add':'+ Add milestone','ms.empty':'No milestones. Add one to split the payments.','ms.name':'Milestone','ms.type':'Type','ms.value':'Value','ms.due':'Due','ms.amount':'Amount','ms.pct':'% of total','ms.flat':'$ amount','ms.dueph':'e.g. Due on signing','ms.rm':'Remove milestone','ms.new':'New milestone',
@@ -339,6 +343,7 @@ es:{
 'sum.title':'Resumen de costos','sum.walls':'Paredes','sum.ceiling':'Techo','sum.doors':'Puertas','sum.windows':'Ventanas','sum.trim':'Molduras','sum.others':'Otros','sum.materials':'Materiales','sum.total':'Estimado total',
 'act.quote':'Generar cotización','act.invoice':'Generar factura','act.receipt':'Generar recibo',
 'q.copy':'Copiar texto','q.copied':'Copiado','q.copyfb':'Seleccione y copie el texto de abajo','q.word':'Descargar Word','q.hint':'Péguelo en un correo o mensaje, o descargue el archivo Word y ábralo en Google Docs para editarlo. La cotización se actualiza al cambiar el estimado.',
+'sh.share':'Compartir','sh.title':'Compartir este documento','sh.msglabel':'Su mensaje al cliente','sh.hint':'Las palabras entre {llaves} se completan solas en cada trabajo: {customer} {doc} {company} {total} {phone}. Su mensaje se guarda para la próxima vez.','sh.preview':'Vista previa','sh.send':'Compartir ahora','sh.dlinstead':'Solo descargar','sh.cancel':'Cancelar','sh.tpl':'Hola {customer} — aquí está su {doc} de {company}. Total: {total}. El archivo Word va adjunto para que pueda abrirlo y revisarlo. ¿Preguntas? Llámeme al {phone}.','sh.fallback':'Su archivo se está descargando y su mensaje se copió — abra su correo, adjunte el archivo y pegue el mensaje.',
 'r.copy':'Copiar texto del recibo','r.hint':'Agregue cada pago que reciba — el depósito, un pago parcial, el pago final. El recibo muestra lo pagado y el saldo pendiente.','pay.title':'Pagos recibidos','pay.add':'+ Agregar pago','pay.empty':'Aún no hay pagos. Agregue el depósito o cualquier pago recibido.','pay.date':'Fecha','pay.method':'Método','pay.methodph':'Efectivo, cheque, tarjeta…','pay.amount':'Monto','pay.note':'Nota','pay.noteph':'ej. Depósito','pay.rm':'Quitar pago',
 'i.copy':'Copiar texto de factura','i.copied':'Copiado','i.copyfb':'Seleccione y copie el texto de abajo','i.word':'Descargar Word','i.hint':'Los hitos dividen el total en pagos. La factura se actualiza al cambiar el estimado.',
 'ms.title':'Hitos de pago','ms.add':'+ Agregar hito','ms.empty':'No hay hitos. Agregue uno para dividir los pagos.','ms.name':'Hito','ms.type':'Tipo','ms.value':'Valor','ms.due':'Vence','ms.amount':'Monto','ms.pct':'% del total','ms.flat':'$ monto fijo','ms.dueph':'ej. Al firmar','ms.rm':'Eliminar hito','ms.new':'Nuevo hito',
@@ -451,6 +456,7 @@ function fresh(){return{
   ],
   others:[],
   payments:[],
+  shareMsg:'',
   milestones:[
     {name:'Deposit',mode:'%',value:30,due:'Due on signing'},
     {name:'Balance on completion',mode:'%',value:70,due:'Due at final walkthrough'}
@@ -477,12 +483,13 @@ function load(){try{
   if(+d.inNo>0)S.inNo=+d.inNo;
   if(+d.recNo>0)S.recNo=+d.recNo;
   if(Array.isArray(d.payments))S.payments=d.payments;
+  if(typeof d.shareMsg==='string')S.shareMsg=d.shareMsg;
   if(d.base&&typeof d.base==='object')Object.assign(S.base,d.base);
   if(d.lang==='es'||d.lang==='en')S.lang=d.lang;
 }catch(e){}}
 let saveT=0;
 function save(){clearTimeout(saveT);saveT=setTimeout(()=>{try{
-  localStorage.setItem(STORE,JSON.stringify({company:S.company,zip:S.zip,overrides:S.overrides,coating:S.coating,terms:S.terms,qn:S.qn,milestones:S.milestones,inNo:S.inNo,payments:S.payments,recNo:S.recNo,base:S.base,lang:S.lang}));
+  localStorage.setItem(STORE,JSON.stringify({company:S.company,zip:S.zip,overrides:S.overrides,coating:S.coating,terms:S.terms,qn:S.qn,milestones:S.milestones,inNo:S.inNo,payments:S.payments,recNo:S.recNo,shareMsg:S.shareMsg,base:S.base,lang:S.lang}));
 }catch(e){}},400)}
 
 /* ---------- language ---------- */
@@ -1223,6 +1230,62 @@ function docHtmlReceipt(){
   return docHtml(t('doc.rec'),S._recNo||'REC',d.toLocaleDateString(LOC(),{year:'numeric',month:'long',day:'numeric'}),meta,[],extra);
 }
 
+/* ---------- share ---------- */
+let shareKind=null;
+function shareInfo(kind){
+  if(kind==='quote'){const q=quoteData();return{name:'quote-'+q.no+'.docx',html:docHtmlQuote(),label:t('doc.quote'),total:C.total}}
+  if(kind==='invoice'){return{name:'invoice-'+(S._invNo||'invoice')+'.docx',html:docHtmlInvoice(),label:t('doc.inv'),total:C.total}}
+  return{name:'receipt-'+(S._recNo||'receipt')+'.docx',html:docHtmlReceipt(),label:t('doc.rec'),total:receiptCalc().paid};
+}
+function fillShare(tpl,info){
+  return tpl.replaceAll('{customer}',S.client.name||t('doc.customer'))
+    .replaceAll('{doc}',info.label)
+    .replaceAll('{company}',S.company.name||'Your Painting Company')
+    .replaceAll('{total}',money(info.total))
+    .replaceAll('{phone}',S.company.phone||'');
+}
+function closeShare(){const o=document.getElementById('shOverlay');if(o)o.remove()}
+function openShare(kind){
+  shareKind=kind;
+  const info=shareInfo(kind);
+  closeShare();
+  if(!document.getElementById('shStyle')){
+    const st=document.createElement('style');st.id='shStyle';
+    st.textContent='.sh-overlay{position:fixed;inset:0;z-index:9997;background:rgba(20,17,10,.62);display:flex;align-items:center;justify-content:center;padding:18px}.sh-card{background:#f6f1e6;color:#1d1a14;max-width:440px;width:100%;border-radius:12px;padding:22px;font-family:system-ui,sans-serif;box-shadow:0 12px 40px rgba(0,0,0,.4)}.sh-card h3{margin:0 0 6px;font-size:19px}.sh-card .sh-file{margin:0 0 10px;font-size:13px;color:#5a5344}.sh-card label{font-size:13px;font-weight:600;display:block;margin:0 0 6px}.sh-card textarea{width:100%;box-sizing:border-box;padding:10px;font-size:15px;border:2px solid #1d1a14;border-radius:8px;background:#fff;font-family:inherit}.sh-card .sh-hint{font-size:12px;color:#5a5344;margin:8px 0}.sh-card .sh-prev{font-size:13px;background:#fff;border:1px dashed #a39e8d;border-radius:8px;padding:8px 10px;margin:0 0 12px;white-space:pre-wrap}.sh-card .sh-note{font-size:13px;margin:10px 0 0;min-height:16px}.sh-x{display:block;margin:10px auto 0;background:none;border:0;color:#5a5344;font-size:14px;cursor:pointer;text-decoration:underline}';
+    document.head.appendChild(st);
+  }
+  const o=document.createElement('div');o.className='sh-overlay';o.id='shOverlay';
+  o.innerHTML=`<div class="sh-card"><h3>${t('sh.title')}</h3>
+  <p class="sh-file">${esc(info.name)} · Word (.docx)</p>
+  <label>${t('sh.msglabel')}</label>
+  <textarea id="shMsg" rows="5">${esc(S.shareMsg||t('sh.tpl'))}</textarea>
+  <p class="sh-hint">${t('sh.hint')}</p>
+  <p class="sh-prev" id="shPrev"></p>
+  <button type="button" class="btn primary" id="shSend" style="width:100%">${t('sh.send')}</button>
+  <button type="button" class="btn" id="shDl" style="width:100%;margin-top:8px">${t('sh.dlinstead')}</button>
+  <button type="button" class="sh-x" id="shCancel">${t('sh.cancel')}</button>
+  <p class="sh-note" id="shNote"></p></div>`;
+  document.body.appendChild(o);
+  const ta=o.querySelector('#shMsg'), prev=o.querySelector('#shPrev');
+  const paintPrev=()=>{prev.textContent=t('sh.preview')+': '+fillShare(ta.value,info)};
+  ta.addEventListener('input',paintPrev);paintPrev();
+  o.querySelector('#shCancel').addEventListener('click',closeShare);
+  o.querySelector('#shDl').addEventListener('click',()=>{const k=shareKind;closeShare();ACT[k==='quote'?'downloadQuote':k==='invoice'?'downloadInvoice':'downloadReceipt']()});
+  o.querySelector('#shSend').addEventListener('click',()=>{
+    const text=fillShare(ta.value,info);
+    S.shareMsg=ta.value;save();
+    const file=new File([buildDocx(info.html)],info.name,{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      navigator.share({files:[file],text:text,title:info.label}).then(()=>closeShare()).catch(()=>{});
+    }else{
+      downloadDoc(info.name,info.html);
+      if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).catch(()=>{})}
+      const note=o.querySelector('#shNote');
+      if(note)note.textContent=t('sh.fallback');
+    }
+  });
+}
+
 /* ---------- update (recompute, then sync the page) ---------- */
 const LOGO='<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="6" y="7" width="30" height="13" rx="3" fill="#F0BE2B" stroke="currentColor" stroke-width="2.5"/><path d="M36 13.5h5a2 2 0 0 1 2 2V24a2 2 0 0 1-2 2H24v6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="20.5" y="32" width="7" height="11" rx="2" fill="currentColor"/></svg>';
 let logoKey=null;
@@ -1391,6 +1454,9 @@ const ACT={
     if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,fallback)}else fallback();
   },
   downloadReceipt(){downloadDoc('receipt-'+(S._recNo||'receipt')+'.docx',docHtmlReceipt())},
+  shareQuote(){openShare('quote')},
+  shareInvoice(){openShare('invoice')},
+  shareReceipt(){openShare('receipt')},
   autoMaterials(){
     if(!C)return;
     const cov=350, coats=2;
@@ -1448,7 +1514,7 @@ applyI18n();
 update();
 })();
 </script>
-<!-- BestQuoteTool gate v5: signup first, 5 free tests = generated estimates, downloads for subscribers (client-side, device-local) -->
+<!-- BestQuoteTool gate v6: signup first, 5 free tests = generated estimates, downloads for subscribers (client-side, device-local) -->
 <style>
 .bqt-pill{position:fixed;left:10px;bottom:10px;z-index:9998;background:#1d1a14;color:#f6f1e6;font:13px/1.35 system-ui,sans-serif;padding:8px 12px;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,.35);max-width:92vw}
 .bqt-pill a{color:#ffc44d;font-weight:600;text-decoration:none;margin-left:8px}
@@ -1542,7 +1608,7 @@ function gateDoc(el){
 }
 var GEN_SEL='[data-act="quote"],[data-act="invoice"],[data-act="receipt"],'+
 '[data-cact="estimate"],[data-cact="invoice"],[data-cact="receipt"]';
-var DOC_SEL='#copyBtn,#copyInvBtn,#copyRecBtn,[data-act="downloadQuote"],[data-act="downloadInvoice"],[data-act="downloadReceipt"],'+
+var DOC_SEL='#copyBtn,#copyInvBtn,#copyRecBtn,[data-act="downloadQuote"],[data-act="downloadInvoice"],[data-act="downloadReceipt"],[data-act="shareQuote"],[data-act="shareInvoice"],[data-act="shareReceipt"],'+
 '[data-cact="dlEst"],[data-cact="dlInv"],[data-cact="dlRec"],'+
 '[data-cact="printEst"],[data-cact="printInv"],[data-cact="printRec"],[data-cact="copyDoc"]';
 document.querySelectorAll(GEN_SEL).forEach(function(el){
