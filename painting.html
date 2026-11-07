@@ -236,6 +236,7 @@ textarea.in{resize:vertical;min-height:84px;line-height:1.4}
         <p class="hint" data-out="sum.extras"></p>
         <button class="btn primary wide" type="button" data-act="quote" data-i18n="act.quote">Generate quote</button>
         <button class="btn primary wide" type="button" data-act="invoice" data-i18n="act.invoice">Generate invoice</button>
+        <button class="btn primary wide" type="button" data-act="receipt" data-i18n="act.receipt">Generate receipt</button>
       </div></aside>
     </div>
     <section id="quote" hidden>
@@ -262,6 +263,20 @@ textarea.in{resize:vertical;min-height:84px;line-height:1.4}
       <textarea id="invtext" class="in" readonly hidden></textarea>
       <div id="invdoc"></div>
     </section>
+    <section id="receipt" hidden>
+      <div class="qtools">
+        <button class="btn primary" type="button" data-act="copyReceipt" id="copyRecBtn" data-i18n="r.copy">Copy receipt text</button>
+        <button class="btn" type="button" data-act="downloadReceipt" data-i18n="i.word">Download Word</button>
+        <span class="hint" data-i18n="r.hint">Add each payment you receive — the deposit, a partial payment, the final payment. The receipt shows what was paid and the balance still due.</span>
+      </div>
+      <div class="blk" style="max-width:820px;margin:0 auto 12px">
+        <div class="bh"><h2 data-i18n="pay.title">Payments received</h2><button class="btn small" type="button" data-act="addPayment" data-i18n="pay.add">+ Add payment</button></div>
+        <div class="bb"><div id="payList"></div>
+        <p class="hint" data-out="pay.summary"></p></div>
+      </div>
+      <textarea id="rectext" class="in" readonly hidden></textarea>
+      <div id="recdoc"></div>
+    </section>
   </div>
 </div>
 
@@ -287,8 +302,10 @@ en:{
 'app.title':'Painting Estimator','app.lead':"Price a room surface by surface. Rates follow the job's ZIP code, every number can be changed, and extra repairs are explained on the quote.",'app.start':'Start estimate','app.company':'Your company','app.cname':'Company name','app.phone':'Phone','app.email':'Email','app.license':'License number','app.logo':'Logo','app.rmlogo':'Remove logo','app.remember':'These details appear on every quote and are remembered in this browser.',
 'hdr.estimate':'Estimate',
 'sum.title':'Cost summary','sum.walls':'Walls','sum.ceiling':'Ceiling','sum.doors':'Doors','sum.windows':'Windows','sum.trim':'Trim and molding','sum.others':'Other items','sum.materials':'Materials','sum.total':'Total estimate',
-'act.quote':'Generate quote','act.invoice':'Generate invoice',
+'act.quote':'Generate quote','act.invoice':'Generate invoice','act.receipt':'Generate receipt',
 'q.copy':'Copy quote text','q.copied':'Copied','q.copyfb':'Select and copy the text below','q.word':'Download Word','q.hint':'Paste it into an email or message, or download the Word file and open it in Google Docs to edit. The quote updates as you change the estimate.',
+'r.copy':'Copy receipt text','r.hint':'Add each payment you receive — the deposit, a partial payment, the final payment. The receipt shows what was paid and the balance still due.','pay.title':'Payments received','pay.add':'+ Add payment','pay.empty':'No payments yet. Add the deposit or any payment you received.','pay.date':'Date','pay.method':'Method','pay.methodph':'Cash, check, card…','pay.amount':'Amount','pay.note':'Note','pay.noteph':'e.g. Deposit','pay.rm':'Remove payment',
+'r.copy':'Copiar texto del recibo','r.hint':'Agregue cada pago que reciba — el depósito, un pago parcial, el pago final. El recibo muestra lo pagado y el saldo pendiente.','pay.title':'Pagos recibidos','pay.add':'+ Agregar pago','pay.empty':'Aún no hay pagos. Agregue el depósito o cualquier pago recibido.','pay.date':'Fecha','pay.method':'Método','pay.methodph':'Efectivo, cheque, tarjeta…','pay.amount':'Monto','pay.note':'Nota','pay.noteph':'ej. Depósito','pay.rm':'Quitar pago',
 'i.copy':'Copy invoice text','i.copied':'Copied','i.copyfb':'Select and copy the text below','i.word':'Download Word','i.hint':'Milestones split the total into payments. The invoice updates as you change the estimate.',
 'ms.title':'Payment milestones','ms.add':'+ Add milestone','ms.empty':'No milestones. Add one to split the payments.','ms.name':'Milestone','ms.type':'Type','ms.value':'Value','ms.due':'Due','ms.amount':'Amount','ms.pct':'% of total','ms.flat':'$ amount','ms.dueph':'e.g. Due on signing','ms.rm':'Remove milestone','ms.new':'New milestone',
 'setup.title':'Job setup','setup.zip':'ZIP code of the job','setup.labor':'Labor rate $ per hour','setup.reset':'Reset my price edits','setup.sughint':'Suggested rates are your standard rates below times the ZIP code multiplier. Type your own price in any rate field on the estimate to override it for that job only; clear the field to go back to the suggested rate.','setup.base':'My standard rates','setup.basehint':'Your base rates at 1.00×. Change them once and every ZIP code suggestion follows.',
@@ -310,7 +327,7 @@ en:{
 'doc.quote':'Quote','doc.valid':'Valid until','doc.prep':'Prepared for','doc.prop':'Property','doc.room':'Room size','doc.paint':'Paint system','doc.customer':'Customer','doc.noaddr':'Not entered','doc.total':'Total','doc.deposit':'Deposit to start the project','doc.balance':'Balance due on completion','doc.accept':'Client acceptance — I agree to the work and price above.','doc.sign':'Signature','doc.pname':'Print name','doc.date':'Date','doc.why':'Why: ','doc.empty':'Nothing is switched on yet.',
 'doc.g.walls':'Walls','doc.g.ceiling':'Ceiling','doc.g.doors':'Doors','doc.g.windows':'Windows','doc.g.trim':'Trim and molding','doc.trimmin':'Trim package minimum (small room)','doc.g.others':'Other items','doc.g.mats':'Materials',
 'doc.matsline':'Paint, primer and supplies for this job','doc.door':'Door','doc.win':'Window','doc.xw':'extra work','doc.side':'side','doc.sides':'sides',
-'doc.inv':'Invoice','doc.billto':'Bill to','doc.ms':'Payment milestones','doc.mstone':'Milestone','doc.nomsset':'No milestones set.','doc.mspct':'% of total','doc.msflat':'flat','doc.roomw':'room','doc.wallh':'wall height','doc.floor':'floor',
+'doc.rec':'Receipt','doc.recfrom':'Received from','doc.payments':'Payments received','doc.paid':'Total paid','doc.bal':'Balance due','doc.paidfull':'PAID IN FULL','doc.invref':'Invoice','doc.inv':'Invoice','doc.billto':'Bill to','doc.ms':'Payment milestones','doc.mstone':'Milestone','doc.nomsset':'No milestones set.','doc.mspct':'% of total','doc.msflat':'flat','doc.roomw':'room','doc.wallh':'wall height','doc.floor':'floor',
 'u.typnum':'Type a number to change it; clear the field to go back.','u.edited':'Edited by you. The calculated value is','u.useit':'Clear the field to use it.',
 'u.zipenter':'Enter a 5-digit ZIP code. Standard rates are used until then.','u.zipnone':'No local data for this ZIP, so standard rates are used','u.ziplocal':'Local rates are','u.ziptimes':'times the standard rates.',
 'u.wallsh':'Calculated from the room:','u.wallsof':'sq ft of wall less','u.wallsdw':'sq ft of doors and windows','u.ceilh':'Calculated from the room:','u.trimperim':'Room perimeter','u.trimcasing':'Door casing (2 × height + width) plus all four sides of each window','u.trimbase':'Room perimeter less the door widths','u.trimcalc':'Calculated:','u.sumroom':'Room','u.sumof':'sq ft of walls','u.sumextras':'Includes','u.sumextras2':'of extra repairs and added work.','u.noextras':'No extra repairs added.','u.door1':'door','u.doors':'doors','u.win1':'window','u.wins':'windows','u.trimmin':'Trim package minimum applied (small-room trim minimum $400)',
@@ -321,7 +338,7 @@ es:{
 'app.title':'Cotizador de pintura','app.lead':'Cotice un cuarto superficie por superficie. Las tarifas siguen el código postal del trabajo, cada número se puede cambiar y las reparaciones adicionales se explican en la cotización.','app.start':'Comenzar cotización','app.company':'Su empresa','app.cname':'Nombre de la empresa','app.phone':'Teléfono','app.email':'Correo electrónico','app.license':'Número de licencia','app.logo':'Logotipo','app.rmlogo':'Quitar logotipo','app.remember':'Estos datos aparecen en cada cotización y se guardan en este navegador.',
 'hdr.estimate':'Estimado',
 'sum.title':'Resumen de costos','sum.walls':'Paredes','sum.ceiling':'Techo','sum.doors':'Puertas','sum.windows':'Ventanas','sum.trim':'Molduras','sum.others':'Otros','sum.materials':'Materiales','sum.total':'Estimado total',
-'act.quote':'Generar cotización','act.invoice':'Generar factura',
+'act.quote':'Generar cotización','act.invoice':'Generar factura','act.receipt':'Generar recibo',
 'q.copy':'Copiar texto','q.copied':'Copiado','q.copyfb':'Seleccione y copie el texto de abajo','q.word':'Descargar Word','q.hint':'Péguelo en un correo o mensaje, o descargue el archivo Word y ábralo en Google Docs para editarlo. La cotización se actualiza al cambiar el estimado.',
 'i.copy':'Copiar texto de factura','i.copied':'Copiado','i.copyfb':'Seleccione y copie el texto de abajo','i.word':'Descargar Word','i.hint':'Los hitos dividen el total en pagos. La factura se actualiza al cambiar el estimado.',
 'ms.title':'Hitos de pago','ms.add':'+ Agregar hito','ms.empty':'No hay hitos. Agregue uno para dividir los pagos.','ms.name':'Hito','ms.type':'Tipo','ms.value':'Valor','ms.due':'Vence','ms.amount':'Monto','ms.pct':'% del total','ms.flat':'$ monto fijo','ms.dueph':'ej. Al firmar','ms.rm':'Eliminar hito','ms.new':'Nuevo hito',
@@ -344,7 +361,7 @@ es:{
 'doc.quote':'Cotización','doc.valid':'Válida hasta','doc.prep':'Preparado para','doc.prop':'Propiedad','doc.room':'Tamaño del cuarto','doc.paint':'Sistema de pintura','doc.customer':'Cliente','doc.noaddr':'No ingresada','doc.total':'Total','doc.deposit':'Depósito para comenzar el proyecto','doc.balance':'Saldo al terminar el trabajo','doc.accept':'Aceptación del cliente — Acepto el trabajo y el precio indicados.','doc.sign':'Firma','doc.pname':'Nombre en letra de molde','doc.date':'Fecha','doc.why':'Por qué: ','doc.empty':'Nada está activado aún.',
 'doc.g.walls':'Paredes','doc.g.ceiling':'Techo','doc.g.doors':'Puertas','doc.g.windows':'Ventanas','doc.g.trim':'Molduras y ribetes','doc.trimmin':'Mínimo de paquete de molduras (cuarto pequeño)','doc.g.others':'Otros trabajos','doc.g.mats':'Materiales',
 'doc.matsline':'Pintura, imprimante y materiales para este trabajo','doc.door':'Puerta','doc.win':'Ventana','doc.xw':'trabajo adicional','doc.side':'lado','doc.sides':'lados',
-'doc.inv':'Factura','doc.billto':'Facturar a','doc.ms':'Hitos de pago','doc.mstone':'Hito','doc.nomsset':'No hay hitos definidos.','doc.mspct':'% del total','doc.msflat':'fijo','doc.roomw':'cuarto','doc.wallh':'altura de pared','doc.floor':'de piso',
+'doc.rec':'Recibo','doc.recfrom':'Recibido de','doc.payments':'Pagos recibidos','doc.paid':'Total pagado','doc.bal':'Saldo pendiente','doc.paidfull':'PAGADO EN SU TOTALIDAD','doc.invref':'Factura','doc.inv':'Factura','doc.billto':'Facturar a','doc.ms':'Hitos de pago','doc.mstone':'Hito','doc.nomsset':'No hay hitos definidos.','doc.mspct':'% del total','doc.msflat':'fijo','doc.roomw':'cuarto','doc.wallh':'altura de pared','doc.floor':'de piso',
 'u.typnum':'Escriba un número para cambiarlo; borre el campo para volver.','u.edited':'Editado por usted. El valor calculado es','u.useit':'Borre el campo para usarlo.',
 'u.zipenter':'Ingrese un código postal de 5 dígitos. Hasta entonces se usan las tarifas estándar.','u.zipnone':'No hay datos locales para este código postal, se usan las tarifas estándar','u.ziplocal':'Las tarifas locales son','u.ziptimes':'veces las tarifas estándar.',
 'u.wallsh':'Calculado del cuarto:','u.wallsof':'pies cuad. de pared menos','u.wallsdw':'pies cuad. de puertas y ventanas','u.ceilh':'Calculado del cuarto:','u.trimperim':'Perímetro del cuarto','u.trimcasing':'Contramarco (2 × altura + ancho) más los cuatro lados de cada ventana','u.trimbase':'Perímetro del cuarto menos el ancho de las puertas','u.trimcalc':'Calculado:','u.sumroom':'Cuarto de','u.sumof':'pies cuad. de paredes','u.sumextras':'Incluye','u.sumextras2':'en reparaciones adicionales.','u.noextras':'Sin reparaciones adicionales.','u.door1':'puerta','u.doors':'puertas','u.win1':'ventana','u.wins':'ventanas','u.trimmin':'Mínimo de paquete de molduras aplicado (mínimo de molduras de $400 por cuarto pequeño)',
@@ -433,6 +450,7 @@ function fresh(){return{
     {name:'Brushes',qty:2,unit:'each',cost:14}
   ],
   others:[],
+  payments:[],
   milestones:[
     {name:'Deposit',mode:'%',value:30,due:'Due on signing'},
     {name:'Balance on completion',mode:'%',value:70,due:'Due at final walkthrough'}
@@ -440,7 +458,8 @@ function fresh(){return{
   client:{name:'',address:''},
   terms:'This quote is valid for 30 days. Extra repairs found once work begins are priced and approved with you before they are done. Payment terms are agreed before the start date.',
   quoteOn:false, qn:0, qdate:0,
-  invoiceOn:false, inNo:0, inDate:0
+  invoiceOn:false, inNo:0, inDate:0,
+  recOn:false, recNo:0, rDate:0
 }}
 let S=fresh(), C=null;
 
@@ -456,12 +475,14 @@ function load(){try{
   if(+d.qn>0)S.qn=+d.qn;
   if(Array.isArray(d.milestones)&&d.milestones.length)S.milestones=d.milestones;
   if(+d.inNo>0)S.inNo=+d.inNo;
+  if(+d.recNo>0)S.recNo=+d.recNo;
+  if(Array.isArray(d.payments))S.payments=d.payments;
   if(d.base&&typeof d.base==='object')Object.assign(S.base,d.base);
   if(d.lang==='es'||d.lang==='en')S.lang=d.lang;
 }catch(e){}}
 let saveT=0;
 function save(){clearTimeout(saveT);saveT=setTimeout(()=>{try{
-  localStorage.setItem(STORE,JSON.stringify({company:S.company,zip:S.zip,overrides:S.overrides,coating:S.coating,terms:S.terms,qn:S.qn,milestones:S.milestones,inNo:S.inNo,base:S.base,lang:S.lang}));
+  localStorage.setItem(STORE,JSON.stringify({company:S.company,zip:S.zip,overrides:S.overrides,coating:S.coating,terms:S.terms,qn:S.qn,milestones:S.milestones,inNo:S.inNo,payments:S.payments,recNo:S.recNo,base:S.base,lang:S.lang}));
 }catch(e){}},400)}
 
 /* ---------- language ---------- */
@@ -1125,6 +1146,83 @@ function docHtmlInvoice(){
   return docHtml(t('doc.inv'),S._invNo||'INV',d.toLocaleDateString(LOC(),{year:'numeric',month:'long',day:'numeric'}),meta,q.groups,extra);
 }
 
+/* ---------- payments & receipt ---------- */
+function receiptCalc(){
+  const total=C?C.total:0;
+  const paid=r2(S.payments.reduce((s,p)=>s+Math.max(0,+p.amount||0),0));
+  return{total,paid,balance:r2(total-paid)};
+}
+let payCount=-1;
+function renderPay(){
+  const el=$('#payList');if(!el)return;
+  el.innerHTML=S.payments.map((p,i)=>`<div class="item"><div class="row">
+    ${fld(t('pay.date'),txt('payments.'+i+'.date'))}
+    ${fld(t('pay.method'),txt('payments.'+i+'.method',t('pay.methodph')))}
+    ${fld(t('pay.amount'),num('payments.'+i+'.amount'))}
+    ${fld(t('pay.note'),txt('payments.'+i+'.note',t('pay.noteph')))}
+    <div class="f"><span>&nbsp;</span><button class="rm" type="button" data-rmpay="${i}" aria-label="${esc(t('pay.rm'))}">×</button></div>
+  </div></div>`).join('')||`<p class="hint">${t('pay.empty')}</p>`;
+  el.querySelectorAll('[data-k]').forEach(inp=>{
+    const k=inp.dataset.k,v=getDisp(k);
+    inp.value=v==null?'':String(v);
+  });
+}
+function syncPay(){
+  if(!$('#payList'))return;
+  if(S.payments.length!==payCount){payCount=S.payments.length;renderPay()}
+  const rc=receiptCalc();
+  const sm=document.querySelector('[data-out="pay.summary"]');
+  if(sm)sm.textContent=rc.paid>0?`${t('doc.paid')}: ${money(rc.paid)} · ${rc.balance>0?`${t('doc.bal')}: ${money(rc.balance)}`:t('doc.paidfull')}`:'';
+}
+function renderReceipt(){
+  const c=S.company, rc=receiptCalc();
+  const contact=[c.phone,c.email,c.license].filter(Boolean).map(esc).join(' · ');
+  const d=new Date(S.rDate||Date.now());
+  const ymd=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
+  const no=`REC-${ymd}-${String(S.recNo||1).padStart(3,'0')}`;
+  S._recNo=no;
+  const q=quoteData();
+  const lines=S.payments.map(p=>`<div class="ql"><span class="d">${esc(p.date||'')} · ${esc(p.method||'')}${p.note?` — ${esc(p.note)}`:''}</span><span class="a">${money(+p.amount||0)}</span></div>`).join('');
+  return `<article class="qdoc">
+    <div class="qh"><div class="qco"><div class="logo big" style="width:64px;height:64px">${logoHtml()}</div><div><h2>${esc(c.name||'Your Painting Company')}</h2>${contact?`<p>${contact}</p>`:''}</div></div>
+      <div class="qno"><p>${t('doc.rec')}</p><b>${esc(no)}</b><p>${esc(d.toLocaleDateString(LOC(),{year:'numeric',month:'long',day:'numeric'}))}</p></div></div>
+    <div class="qmeta">
+      <div><span>${t('doc.recfrom')}</span> ${esc(S.client.name||t('doc.customer'))}</div>
+      <div><span>${t('doc.prop')}</span> ${esc(S.client.address||t('doc.noaddr'))}</div>
+      ${S._invNo?`<div><span>${t('doc.invref')}</span> ${esc(S._invNo)}</div>`:''}
+      <div><span>${t('doc.room')}</span> ${esc(q.room)}</div>
+    </div>
+    <div class="qgrp"><div class="qgh"><span>${t('doc.payments')}</span><b>${money(rc.paid)}</b></div>${lines||`<p class="hint">${t('pay.empty')}</p>`}</div>
+    <div class="qtotal"><span>${t('doc.total')}</span><b>${money(rc.total)}</b></div>
+    <div class="qtotal"><span>${t('doc.bal')}</span><b>${money(Math.max(0,rc.balance))}</b></div>
+    ${rc.balance<=0&&rc.paid>0?`<p class="qterms"><b>${t('doc.paidfull')}</b></p>`:''}
+    <p class="qterms">${esc(S.terms)}</p>
+  </article>`;
+}
+function receiptText(){
+  const c=S.company, rc=receiptCalc(), T=[];
+  T.push(c.name||'Your Painting Company');
+  const contact=[c.phone,c.email,c.license].filter(Boolean).join(' | ');
+  if(contact)T.push(contact);
+  T.push('',`${t('doc.rec')} ${S._recNo||''}`,`${t('doc.recfrom')}: ${S.client.name||t('doc.customer')}`,`${t('doc.prop')}: ${S.client.address||t('doc.noaddr')}`);
+  if(S._invNo)T.push(`${t('doc.invref')}: ${S._invNo}`);
+  T.push('',t('doc.payments').toUpperCase());
+  S.payments.forEach(p=>{T.push(`${p.date||''} · ${p.method||''}${p.note?` — ${p.note}`:''}  ${money(+p.amount||0)}`)});
+  T.push('',`${t('doc.paid')}: ${money(rc.paid)}`,`${t('doc.total')}: ${money(rc.total)}`,`${t('doc.bal')}: ${money(Math.max(0,rc.balance))}`);
+  if(rc.balance<=0&&rc.paid>0)T.push(t('doc.paidfull'));
+  T.push('',S.terms);
+  return T.join('\n');
+}
+function docHtmlReceipt(){
+  const c=S.company, rc=receiptCalc();
+  const d=new Date(S.rDate||Date.now());
+  const meta=`${esc(c.name||'')}<br>${t('doc.recfrom')}: ${esc(S.client.name||t('doc.customer'))}<br>${t('doc.prop')}: ${esc(S.client.address||'')}${S._invNo?`<br>${t('doc.invref')}: ${esc(S._invNo)}`:''}`;
+  let extra=`<h2>${t('doc.payments')}</h2><table border="1" cellpadding="6" cellspacing="0">`;
+  S.payments.forEach(p=>{extra+=`<tr><td>${esc(p.date||'')} · ${esc(p.method||'')}${p.note?` — ${esc(p.note)}`:''}</td><td align="right">${money(+p.amount||0)}</td></tr>`});
+  extra+=`</table><h2>${t('doc.paid').toUpperCase()} — ${money(rc.paid)}</h2><h2>${t('doc.bal').toUpperCase()} — ${money(Math.max(0,rc.balance))}</h2>${rc.balance<=0&&rc.paid>0?`<p><b>${t('doc.paidfull')}</b></p>`:''}<p>${esc(S.terms)}</p>`;
+  return docHtml(t('doc.rec'),S._recNo||'REC',d.toLocaleDateString(LOC(),{year:'numeric',month:'long',day:'numeric'}),meta,[],extra);
+}
+
 /* ---------- update (recompute, then sync the page) ---------- */
 const LOGO='<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="6" y="7" width="30" height="13" rx="3" fill="#F0BE2B" stroke="currentColor" stroke-width="2.5"/><path d="M36 13.5h5a2 2 0 0 1 2 2V24a2 2 0 0 1-2 2H24v6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="20.5" y="32" width="7" height="11" rx="2" fill="currentColor"/></svg>';
 let logoKey=null;
@@ -1194,6 +1292,8 @@ function update(){
   if(S.quoteOn)$('#qdoc').innerHTML=renderQuote();
   syncMs();
   if(S.invoiceOn)$('#invdoc').innerHTML=renderInvoice();
+  syncPay();
+  if(S.recOn)$('#recdoc').innerHTML=renderReceipt();
   save();
 }
 
@@ -1278,6 +1378,19 @@ const ACT={
     if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,fallback)}else fallback();
   },
   downloadInvoice(){downloadDoc('invoice-'+(S._invNo||'invoice')+'.docx',docHtmlInvoice())},
+  receipt(){
+    if(!S.recOn){S.recNo=(S.recNo||0)+1;S.rDate=Date.now();S.recOn=true}
+    $('#receipt').hidden=false;update();
+    $('#receipt').scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'});
+  },
+  addPayment(){S.payments.push({date:new Date().toISOString().slice(0,10),method:'',amount:0,note:''});update()},
+  copyReceipt(){
+    const text=receiptText(), btn=$('#copyRecBtn'), ta=$('#rectext');
+    const done=()=>{btn.textContent=t('i.copied');setTimeout(()=>{btn.textContent=t('r.copy')},1800)};
+    const fallback=()=>{ta.hidden=false;ta.value=text;ta.focus();ta.select();btn.textContent=t('i.copyfb');setTimeout(()=>{btn.textContent=t('r.copy')},3500)};
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,fallback)}else fallback();
+  },
+  downloadReceipt(){downloadDoc('receipt-'+(S._recNo||'receipt')+'.docx',docHtmlReceipt())},
   autoMaterials(){
     if(!C)return;
     const cov=350, coats=2;
@@ -1296,6 +1409,8 @@ const ACT={
 document.addEventListener('click',e=>{
   const lg=e.target.closest('[data-lang]');
   if(lg){setLang(lg.dataset.lang);return}
+  const rmp=e.target.closest('[data-rmpay]');
+  if(rmp){S.payments.splice(+rmp.dataset.rmpay,1);update();return}
   const rmm=e.target.closest('[data-rmms]');
   if(rmm){S.milestones.splice(+rmm.dataset.rmms,1);update();return}
   const rm=e.target.closest('[data-rm]');
@@ -1333,7 +1448,7 @@ applyI18n();
 update();
 })();
 </script>
-<!-- BestQuoteTool gate v4: signup first, 5 free tests = generated estimates, downloads for subscribers (client-side, device-local) -->
+<!-- BestQuoteTool gate v5: signup first, 5 free tests = generated estimates, downloads for subscribers (client-side, device-local) -->
 <style>
 .bqt-pill{position:fixed;left:10px;bottom:10px;z-index:9998;background:#1d1a14;color:#f6f1e6;font:13px/1.35 system-ui,sans-serif;padding:8px 12px;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,.35);max-width:92vw}
 .bqt-pill a{color:#ffc44d;font-weight:600;text-decoration:none;margin-left:8px}
@@ -1425,9 +1540,9 @@ function gateDoc(el){
   if(isSub()){return true}
   showSubscribe('docs');return false;
 }
-var GEN_SEL='[data-act="quote"],[data-act="invoice"],'+
+var GEN_SEL='[data-act="quote"],[data-act="invoice"],[data-act="receipt"],'+
 '[data-cact="estimate"],[data-cact="invoice"],[data-cact="receipt"]';
-var DOC_SEL='#copyBtn,#copyInvBtn,[data-act="downloadQuote"],[data-act="downloadInvoice"],'+
+var DOC_SEL='#copyBtn,#copyInvBtn,#copyRecBtn,[data-act="downloadQuote"],[data-act="downloadInvoice"],[data-act="downloadReceipt"],'+
 '[data-cact="dlEst"],[data-cact="dlInv"],[data-cact="dlRec"],'+
 '[data-cact="printEst"],[data-cact="printInv"],[data-cact="printRec"],[data-cact="copyDoc"]';
 document.querySelectorAll(GEN_SEL).forEach(function(el){
