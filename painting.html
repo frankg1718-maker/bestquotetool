@@ -1333,7 +1333,7 @@ applyI18n();
 update();
 })();
 </script>
-<!-- BestQuoteTool gate v1: 5 free documents, email account first (client-side, device-local) -->
+<!-- BestQuoteTool gate v4: signup first, 5 free tests = generated estimates, downloads for subscribers (client-side, device-local) -->
 <style>
 .bqt-pill{position:fixed;left:10px;bottom:10px;z-index:9998;background:#1d1a14;color:#f6f1e6;font:13px/1.35 system-ui,sans-serif;padding:8px 12px;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,.35);max-width:92vw}
 .bqt-pill a{color:#ffc44d;font-weight:600;text-decoration:none;margin-left:8px}
@@ -1353,17 +1353,19 @@ update();
 var FREE_LIMIT=5;
 function g(k){try{return localStorage.getItem(k)}catch(e){return null}}
 function s(k,v){try{localStorage.setItem(k,v)}catch(e){}}
-function used(){var n=parseInt(g('bqt_docs_used')||'0',10);return isNaN(n)?0:n}
+function sg(k){try{return sessionStorage.getItem(k)}catch(e){return null}}
+function ss(k,v){try{sessionStorage.setItem(k,v)}catch(e){}}
+function used(){var n=parseInt(g('bqt_tests_used')||'0',10);return isNaN(n)?0:n}
 function isSub(){return g('bqt_subscribed')==='1'}
 function acct(){return g('bqt_email')}
-var passNext=false,pendingEl=null;
+var pendingEl=null,resumeCount=false;
 var pill=document.createElement('div');pill.className='bqt-pill';document.body.appendChild(pill);
 function paint(){
   if(isSub()){pill.innerHTML='BestQuoteTool · <strong>Unlimited</strong> — subscribed';return}
-  var u=used(),left=FREE_LIMIT-u;
-  var t='BestQuoteTool · Free documents: <strong>'+u+' of '+FREE_LIMIT+' used</strong>';
+  var u=used();
+  var t='BestQuoteTool · Free tests: <strong>'+u+' of '+FREE_LIMIT+' used</strong>';
   if(acct()){t+=' · '+acct()}
-  if(left<=0){t+='<a href="index.html#subscribe">Subscribe — $15/month</a>'}
+  if(u>=FREE_LIMIT){t+='<a href="index.html#subscribe">Subscribe — $15/month</a>'}
   pill.innerHTML=t;
 }
 function overlay(html){
@@ -1375,42 +1377,68 @@ function overlay(html){
 function closeOverlay(){var o=document.getElementById('bqtOverlay');if(o)o.remove()}
 function showSignup(){
   var o=overlay('<div class="bqt-card"><h3>Create your free account</h3>'+
-  '<p>Enter your email to start. Your first 5 documents are free — download and print included.</p>'+
-  '<p class="es">Crea tu cuenta gratis con tu correo. Tus primeros 5 documentos son gratis.</p>'+
+  '<p>Sign up first — no charge, no card. Then make 5 real estimates free with the whole tool.</p>'+
+  '<p class="es">Crea tu cuenta gratis primero — sin cargo, sin tarjeta. Luego haz 5 estimaciones reales gratis.</p>'+
   '<p class="bqt-err" id="bqtErr"></p>'+
   '<input type="email" id="bqtEmail" placeholder="you@company.com" autocomplete="email">'+
-  '<button type="button" id="bqtGo">Start — 5 free documents</button>'+
+  '<button type="button" id="bqtGo">Create my account</button>'+
   '<button type="button" class="bqt-x" id="bqtCancel">Not now</button></div>');
   var inp=o.querySelector('#bqtEmail');inp.focus();
-  o.querySelector('#bqtCancel').addEventListener('click',function(){pendingEl=null;closeOverlay()});
+  o.querySelector('#bqtCancel').addEventListener('click',function(){pendingEl=null;resumeCount=false;closeOverlay()});
   o.querySelector('#bqtGo').addEventListener('click',function(){
     var v=(inp.value||'').trim();
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){o.querySelector('#bqtErr').textContent='Please enter a valid email.';return}
     s('bqt_email',v);paint();closeOverlay();
-    if(pendingEl){var el=pendingEl;pendingEl=null;passNext=true;el.click()}
+    if(pendingEl){var el=pendingEl;pendingEl=null;resumeCount=true;el.click()}
   });
 }
-function showSubscribe(){
-  var o=overlay('<div class="bqt-card"><h3>Your 5 free documents are used</h3>'+
-  '<p>Subscribe for unlimited documents — $15/month, cancel anytime. Your rates and quotes stay on your device; we never see them.</p>'+
-  '<p class="es">Ya usaste tus 5 documentos gratis. Suscríbete para documentos ilimitados — $15/mes.</p>'+
+function showSubscribe(kind){
+  var h,p;
+  if(kind==='docs'){
+    h='Downloads come with the subscription';
+    p='Your free tests show you the whole tool, with the finished estimate on your screen. Subscribers download, print and copy unlimited documents — $15/month, cancel anytime.';
+  }else{
+    h='Your 5 free tests are used';
+    p='Subscribe for unlimited estimates and documents — $15/month, cancel anytime.';
+  }
+  var o=overlay('<div class="bqt-card"><h3>'+h+'</h3><p>'+p+'</p>'+
   '<a class="bqt-go" href="index.html#subscribe">Subscribe — $15/month</a>'+
   '<button type="button" class="bqt-x" id="bqtCancel">Keep looking</button></div>');
   o.querySelector('#bqtCancel').addEventListener('click',closeOverlay);
 }
-function gate(el){
-  if(passNext){passNext=false;return true}
-  if(isSub()){paint();return true}
-  if(!acct()){pendingEl=el;showSignup();return false}
-  if(used()>=FREE_LIMIT){showSubscribe();return false}
-  s('bqt_docs_used',String(used()+1));paint();return true;
+function kindOf(el){
+  return el.getAttribute('data-act')||el.getAttribute('data-cact')||'doc';
 }
-var SEL='#copyBtn,#copyInvBtn,[data-act="downloadQuote"],[data-act="downloadInvoice"],'+
+function gateGenerate(el){
+  var kind=kindOf(el),flag='bqt_open_'+kind;
+  if(resumeCount&&el===pendingEl){/* unreachable safeguard */}
+  if(isSub()){ss(flag,'1');paint();return true}
+  if(sg(flag)==='1'){return true}
+  if(!acct()){
+    if(resumeCount){/* fall through to counting below */}
+    else{pendingEl=el;showSignup();return false}
+  }
+  if(used()>=FREE_LIMIT){showSubscribe('tests');return false}
+  s('bqt_tests_used',String(used()+1));ss(flag,'1');paint();return true;
+}
+function gateDoc(el){
+  if(isSub()){return true}
+  showSubscribe('docs');return false;
+}
+var GEN_SEL='[data-act="quote"],[data-act="invoice"],'+
+'[data-cact="estimate"],[data-cact="invoice"],[data-cact="receipt"]';
+var DOC_SEL='#copyBtn,#copyInvBtn,[data-act="downloadQuote"],[data-act="downloadInvoice"],'+
 '[data-cact="dlEst"],[data-cact="dlInv"],[data-cact="dlRec"],'+
 '[data-cact="printEst"],[data-cact="printInv"],[data-cact="printRec"],[data-cact="copyDoc"]';
-document.querySelectorAll(SEL).forEach(function(el){
+document.querySelectorAll(GEN_SEL).forEach(function(el){
   el.addEventListener('click',function(e){
-    if(!gate(el)){e.preventDefault();e.stopPropagation()}
+    var wasResume=resumeCount;resumeCount=false;
+    if(!gateGenerate(el)){e.preventDefault();e.stopPropagation()}
+  },true);
+});
+document.querySelectorAll(DOC_SEL).forEach(function(el){
+  el.addEventListener('click',function(e){
+    if(!gateDoc(el)){e.preventDefault();e.stopPropagation()}
   },true);
 });
 paint();
