@@ -313,7 +313,7 @@ en:{
 'sum.title':'Cost summary','sum.walls':'Walls','sum.ceiling':'Ceiling','sum.doors':'Doors','sum.windows':'Windows','sum.trim':'Trim and molding','sum.others':'Other items','sum.materials':'Materials','sum.total':'Total estimate',
 'act.quote':'Generate quote','act.invoice':'Generate invoice','act.receipt':'Generate receipt',
 'q.copy':'Copy quote text','q.copied':'Copied','q.copyfb':'Select and copy the text below','q.word':'Download Word','q.hint':'Paste it into an email or message, or download the Word file and open it in Google Docs to edit. The quote updates as you change the estimate.',
-'ed.edit':'Edit document','ed.done':'Done editing','ed.reset':'Back to original','ed.confirm':'Throw away your edits and go back to the generated document?','ed.note':'You edited this document — downloads, copies and shares use your version.',
+'ed.edit':'Edit document','ed.done':'Done editing','ed.reset':'Back to original','ed.confirm':'Sure? Tap again to reset','ed.note':'You edited this document — downloads, copies and shares use your version.',
 'sh.share':'Share','sh.title':'Share this document','sh.msglabel':'Your message to the customer','sh.hint':'Words in {braces} fill in by themselves for each job: {customer} {doc} {company} {total} {phone}. Your message is remembered for next time.','sh.preview':'Preview','sh.send':'Share now','sh.dlinstead':'Just download instead','sh.cancel':'Cancel','sh.tpl':'Hi {customer} — here is your {doc} from {company}. Total: {total}. The Word file is attached so you can open and review it. Any questions, call me at {phone}.','sh.fallback':'Your file is downloading and your message was copied — open your email, attach the file and paste the message.',
 'r.copy':'Copy receipt text','r.hint':'Add each payment you receive — the deposit, a partial payment, the final payment. The receipt shows what was paid and the balance still due.','pay.title':'Payments received','pay.add':'+ Add payment','pay.empty':'No payments yet. Add the deposit or any payment you received.','pay.date':'Date','pay.method':'Method','pay.methodph':'Cash, check, card…','pay.amount':'Amount','pay.note':'Note','pay.noteph':'e.g. Deposit','pay.rm':'Remove payment',
 'i.copy':'Copy invoice text','i.copied':'Copied','i.copyfb':'Select and copy the text below','i.word':'Download Word','i.hint':'Milestones split the total into payments. The invoice updates as you change the estimate.',
@@ -350,7 +350,7 @@ es:{
 'sum.title':'Resumen de costos','sum.walls':'Paredes','sum.ceiling':'Techo','sum.doors':'Puertas','sum.windows':'Ventanas','sum.trim':'Molduras','sum.others':'Otros','sum.materials':'Materiales','sum.total':'Estimado total',
 'act.quote':'Generar cotización','act.invoice':'Generar factura','act.receipt':'Generar recibo',
 'q.copy':'Copiar texto','q.copied':'Copiado','q.copyfb':'Seleccione y copie el texto de abajo','q.word':'Descargar Word','q.hint':'Péguelo en un correo o mensaje, o descargue el archivo Word y ábralo en Google Docs para editarlo. La cotización se actualiza al cambiar el estimado.',
-'ed.edit':'Editar documento','ed.done':'Terminar de editar','ed.reset':'Volver al original','ed.confirm':'¿Descartar sus ediciones y volver al documento generado?','ed.note':'Usted editó este documento — las descargas, copias y compartidos usan su versión.',
+'ed.edit':'Editar documento','ed.done':'Terminar de editar','ed.reset':'Volver al original','ed.confirm':'¿Seguro? Toque otra vez','ed.note':'Usted editó este documento — las descargas, copias y compartidos usan su versión.',
 'sh.share':'Compartir','sh.title':'Compartir este documento','sh.msglabel':'Su mensaje al cliente','sh.hint':'Las palabras entre {llaves} se completan solas en cada trabajo: {customer} {doc} {company} {total} {phone}. Su mensaje se guarda para la próxima vez.','sh.preview':'Vista previa','sh.send':'Compartir ahora','sh.dlinstead':'Solo descargar','sh.cancel':'Cancelar','sh.tpl':'Hola {customer} — aquí está su {doc} de {company}. Total: {total}. El archivo Word va adjunto para que pueda abrirlo y revisarlo. ¿Preguntas? Llámeme al {phone}.','sh.fallback':'Su archivo se está descargando y su mensaje se copió — abra su correo, adjunte el archivo y pegue el mensaje.',
 'r.copy':'Copiar texto del recibo','r.hint':'Agregue cada pago que reciba — el depósito, un pago parcial, el pago final. El recibo muestra lo pagado y el saldo pendiente.','pay.title':'Pagos recibidos','pay.add':'+ Agregar pago','pay.empty':'Aún no hay pagos. Agregue el depósito o cualquier pago recibido.','pay.date':'Fecha','pay.method':'Método','pay.methodph':'Efectivo, cheque, tarjeta…','pay.amount':'Monto','pay.note':'Nota','pay.noteph':'ej. Depósito','pay.rm':'Quitar pago',
 'i.copy':'Copiar texto de factura','i.copied':'Copiado','i.copyfb':'Seleccione y copie el texto de abajo','i.word':'Descargar Word','i.hint':'Los hitos dividen el total en pagos. La factura se actualiza al cambiar el estimado.',
@@ -1502,8 +1502,8 @@ const ACT={
   shareReceipt(){openShare('receipt')},
   editQuote(){qEditMode?exitEdit('quote'):enterEdit('quote')},
   editReceipt(){rEditMode?exitEdit('receipt'):enterEdit('receipt')},
-  resetQuoteEdit(){if(!S.quoteEdit&&!qEditMode)return;if(confirm(t('ed.confirm'))){S.quoteEdit='';if(qEditMode){qEditMode=false;const art=$('#qdoc article');if(art){art.contentEditable='false';art.style.outline=''}}setEditBtn('editQuote',false);save();update()}},
-  resetReceiptEdit(){if(!S.recEdit&&!rEditMode)return;if(confirm(t('ed.confirm'))){S.recEdit='';if(rEditMode){rEditMode=false;const art=$('#recdoc article');if(art){art.contentEditable='false';art.style.outline=''}}setEditBtn('editReceipt',false);save();update()}},
+  resetQuoteEdit(){if(!S.quoteEdit&&!qEditMode)return;const b=document.querySelector('[data-act="resetQuoteEdit"]');if(!b.dataset.armed){b.dataset.armed='1';b.textContent=t('ed.confirm');setTimeout(()=>{if(b.dataset.armed){delete b.dataset.armed;b.textContent=t('ed.reset')}},4000);return}delete b.dataset.armed;b.textContent=t('ed.reset');S.quoteEdit='';if(qEditMode){qEditMode=false;const art=$('#qdoc article');if(art){art.contentEditable='false';art.style.outline=''}}setEditBtn('editQuote',false);save();update()},
+  resetReceiptEdit(){if(!S.recEdit&&!rEditMode)return;const b=document.querySelector('[data-act="resetReceiptEdit"]');if(!b.dataset.armed){b.dataset.armed='1';b.textContent=t('ed.confirm');setTimeout(()=>{if(b.dataset.armed){delete b.dataset.armed;b.textContent=t('ed.reset')}},4000);return}delete b.dataset.armed;b.textContent=t('ed.reset');S.recEdit='';if(rEditMode){rEditMode=false;const art=$('#recdoc article');if(art){art.contentEditable='false';art.style.outline=''}}setEditBtn('editReceipt',false);save();update()},
   autoMaterials(){
     if(!C)return;
     const cov=350, coats=2;
@@ -1561,7 +1561,7 @@ applyI18n();
 update();
 })();
 </script>
-<!-- BestQuoteTool gate v6: signup first, 5 free tests = generated estimates, downloads for subscribers (client-side, device-local) -->
+<!-- BestQuoteTool gate v7: signup first, 5 free tests = generated estimates, downloads for subscribers (client-side, device-local) -->
 <style>
 .bqt-pill{position:fixed;left:10px;bottom:10px;z-index:9998;background:#1d1a14;color:#f6f1e6;font:13px/1.35 system-ui,sans-serif;padding:8px 12px;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,.35);max-width:92vw}
 .bqt-pill a{color:#ffc44d;font-weight:600;text-decoration:none;margin-left:8px}
@@ -1656,6 +1656,7 @@ function gateDoc(el){
 var GEN_SEL='[data-act="quote"],[data-act="invoice"],[data-act="receipt"],'+
 '[data-cact="estimate"],[data-cact="invoice"],[data-cact="receipt"]';
 var DOC_SEL='#copyBtn,#copyInvBtn,#copyRecBtn,[data-act="downloadQuote"],[data-act="downloadInvoice"],[data-act="downloadReceipt"],[data-act="shareQuote"],[data-act="shareInvoice"],[data-act="shareReceipt"],'+
+    '[data-cact="shareEst"],[data-cact="shareInv"],[data-cact="shareRec"],'+
 '[data-cact="dlEst"],[data-cact="dlInv"],[data-cact="dlRec"],'+
 '[data-cact="printEst"],[data-cact="printInv"],[data-cact="printRec"],[data-cact="copyDoc"]';
 document.querySelectorAll(GEN_SEL).forEach(function(el){
