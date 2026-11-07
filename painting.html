@@ -1399,7 +1399,7 @@ function showSubscribe(){
   o.querySelector('#bqtCancel').addEventListener('click',closeOverlay);
 }
 function gate(el){
-  if(passNext){passNext=false}
+  if(passNext){passNext=false;return true}
   if(isSub()){paint();return true}
   if(!acct()){pendingEl=el;showSignup();return false}
   if(used()>=FREE_LIMIT){showSubscribe();return false}
