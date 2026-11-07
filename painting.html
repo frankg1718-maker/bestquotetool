@@ -244,6 +244,9 @@ textarea.in{resize:vertical;min-height:84px;line-height:1.4}
         <button class="btn primary" type="button" data-act="copyQuote" id="copyBtn" data-i18n="q.copy">Copy quote text</button>
         <button class="btn" type="button" data-act="downloadQuote" data-i18n="q.word">Download Word</button>
         <button class="btn" type="button" data-act="shareQuote" data-i18n="sh.share">Share</button>
+        <button class="btn" type="button" data-act="editQuote" data-i18n="ed.edit">Edit document</button>
+        <button class="btn" type="button" data-act="resetQuoteEdit" data-i18n="ed.reset">Back to original</button>
+        <span class="hint" data-out="q.edited"></span>
         <span class="hint" data-i18n="q.hint">Paste it into an email or message, or download the Word file and open it in Google Docs to edit. The quote updates as you change the estimate.</span>
       </div>
       <textarea id="qtext" class="in" readonly hidden></textarea>
@@ -270,6 +273,9 @@ textarea.in{resize:vertical;min-height:84px;line-height:1.4}
         <button class="btn primary" type="button" data-act="copyReceipt" id="copyRecBtn" data-i18n="r.copy">Copy receipt text</button>
         <button class="btn" type="button" data-act="downloadReceipt" data-i18n="i.word">Download Word</button>
         <button class="btn" type="button" data-act="shareReceipt" data-i18n="sh.share">Share</button>
+        <button class="btn" type="button" data-act="editReceipt" data-i18n="ed.edit">Edit document</button>
+        <button class="btn" type="button" data-act="resetReceiptEdit" data-i18n="ed.reset">Back to original</button>
+        <span class="hint" data-out="r.edited"></span>
         <span class="hint" data-i18n="r.hint">Add each payment you receive — the deposit, a partial payment, the final payment. The receipt shows what was paid and the balance still due.</span>
       </div>
       <div class="blk" style="max-width:820px;margin:0 auto 12px">
@@ -307,6 +313,7 @@ en:{
 'sum.title':'Cost summary','sum.walls':'Walls','sum.ceiling':'Ceiling','sum.doors':'Doors','sum.windows':'Windows','sum.trim':'Trim and molding','sum.others':'Other items','sum.materials':'Materials','sum.total':'Total estimate',
 'act.quote':'Generate quote','act.invoice':'Generate invoice','act.receipt':'Generate receipt',
 'q.copy':'Copy quote text','q.copied':'Copied','q.copyfb':'Select and copy the text below','q.word':'Download Word','q.hint':'Paste it into an email or message, or download the Word file and open it in Google Docs to edit. The quote updates as you change the estimate.',
+'ed.edit':'Edit document','ed.done':'Done editing','ed.reset':'Back to original','ed.confirm':'Throw away your edits and go back to the generated document?','ed.note':'You edited this document — downloads, copies and shares use your version.',
 'sh.share':'Share','sh.title':'Share this document','sh.msglabel':'Your message to the customer','sh.hint':'Words in {braces} fill in by themselves for each job: {customer} {doc} {company} {total} {phone}. Your message is remembered for next time.','sh.preview':'Preview','sh.send':'Share now','sh.dlinstead':'Just download instead','sh.cancel':'Cancel','sh.tpl':'Hi {customer} — here is your {doc} from {company}. Total: {total}. The Word file is attached so you can open and review it. Any questions, call me at {phone}.','sh.fallback':'Your file is downloading and your message was copied — open your email, attach the file and paste the message.',
 'r.copy':'Copy receipt text','r.hint':'Add each payment you receive — the deposit, a partial payment, the final payment. The receipt shows what was paid and the balance still due.','pay.title':'Payments received','pay.add':'+ Add payment','pay.empty':'No payments yet. Add the deposit or any payment you received.','pay.date':'Date','pay.method':'Method','pay.methodph':'Cash, check, card…','pay.amount':'Amount','pay.note':'Note','pay.noteph':'e.g. Deposit','pay.rm':'Remove payment',
 'i.copy':'Copy invoice text','i.copied':'Copied','i.copyfb':'Select and copy the text below','i.word':'Download Word','i.hint':'Milestones split the total into payments. The invoice updates as you change the estimate.',
@@ -343,6 +350,7 @@ es:{
 'sum.title':'Resumen de costos','sum.walls':'Paredes','sum.ceiling':'Techo','sum.doors':'Puertas','sum.windows':'Ventanas','sum.trim':'Molduras','sum.others':'Otros','sum.materials':'Materiales','sum.total':'Estimado total',
 'act.quote':'Generar cotización','act.invoice':'Generar factura','act.receipt':'Generar recibo',
 'q.copy':'Copiar texto','q.copied':'Copiado','q.copyfb':'Seleccione y copie el texto de abajo','q.word':'Descargar Word','q.hint':'Péguelo en un correo o mensaje, o descargue el archivo Word y ábralo en Google Docs para editarlo. La cotización se actualiza al cambiar el estimado.',
+'ed.edit':'Editar documento','ed.done':'Terminar de editar','ed.reset':'Volver al original','ed.confirm':'¿Descartar sus ediciones y volver al documento generado?','ed.note':'Usted editó este documento — las descargas, copias y compartidos usan su versión.',
 'sh.share':'Compartir','sh.title':'Compartir este documento','sh.msglabel':'Su mensaje al cliente','sh.hint':'Las palabras entre {llaves} se completan solas en cada trabajo: {customer} {doc} {company} {total} {phone}. Su mensaje se guarda para la próxima vez.','sh.preview':'Vista previa','sh.send':'Compartir ahora','sh.dlinstead':'Solo descargar','sh.cancel':'Cancelar','sh.tpl':'Hola {customer} — aquí está su {doc} de {company}. Total: {total}. El archivo Word va adjunto para que pueda abrirlo y revisarlo. ¿Preguntas? Llámeme al {phone}.','sh.fallback':'Su archivo se está descargando y su mensaje se copió — abra su correo, adjunte el archivo y pegue el mensaje.',
 'r.copy':'Copiar texto del recibo','r.hint':'Agregue cada pago que reciba — el depósito, un pago parcial, el pago final. El recibo muestra lo pagado y el saldo pendiente.','pay.title':'Pagos recibidos','pay.add':'+ Agregar pago','pay.empty':'Aún no hay pagos. Agregue el depósito o cualquier pago recibido.','pay.date':'Fecha','pay.method':'Método','pay.methodph':'Efectivo, cheque, tarjeta…','pay.amount':'Monto','pay.note':'Nota','pay.noteph':'ej. Depósito','pay.rm':'Quitar pago',
 'i.copy':'Copiar texto de factura','i.copied':'Copiado','i.copyfb':'Seleccione y copie el texto de abajo','i.word':'Descargar Word','i.hint':'Los hitos dividen el total en pagos. La factura se actualiza al cambiar el estimado.',
@@ -465,7 +473,8 @@ function fresh(){return{
   terms:'This quote is valid for 30 days. Extra repairs found once work begins are priced and approved with you before they are done. Payment terms are agreed before the start date.',
   quoteOn:false, qn:0, qdate:0,
   invoiceOn:false, inNo:0, inDate:0,
-  recOn:false, recNo:0, rDate:0
+  recOn:false, recNo:0, rDate:0,
+  quoteEdit:'', recEdit:''
 }}
 let S=fresh(), C=null;
 
@@ -484,12 +493,14 @@ function load(){try{
   if(+d.recNo>0)S.recNo=+d.recNo;
   if(Array.isArray(d.payments))S.payments=d.payments;
   if(typeof d.shareMsg==='string')S.shareMsg=d.shareMsg;
+  if(typeof d.quoteEdit==='string')S.quoteEdit=d.quoteEdit;
+  if(typeof d.recEdit==='string')S.recEdit=d.recEdit;
   if(d.base&&typeof d.base==='object')Object.assign(S.base,d.base);
   if(d.lang==='es'||d.lang==='en')S.lang=d.lang;
 }catch(e){}}
 let saveT=0;
 function save(){clearTimeout(saveT);saveT=setTimeout(()=>{try{
-  localStorage.setItem(STORE,JSON.stringify({company:S.company,zip:S.zip,overrides:S.overrides,coating:S.coating,terms:S.terms,qn:S.qn,milestones:S.milestones,inNo:S.inNo,payments:S.payments,recNo:S.recNo,shareMsg:S.shareMsg,base:S.base,lang:S.lang}));
+  localStorage.setItem(STORE,JSON.stringify({company:S.company,zip:S.zip,overrides:S.overrides,coating:S.coating,terms:S.terms,qn:S.qn,milestones:S.milestones,inNo:S.inNo,payments:S.payments,recNo:S.recNo,shareMsg:S.shareMsg,quoteEdit:S.quoteEdit,recEdit:S.recEdit,base:S.base,lang:S.lang}));
 }catch(e){}},400)}
 
 /* ---------- language ---------- */
@@ -1160,6 +1171,7 @@ function receiptCalc(){
   return{total,paid,balance:r2(total-paid)};
 }
 let payCount=-1;
+let qEditMode=false, rEditMode=false, qEditStart='', rEditStart='';
 function renderPay(){
   const el=$('#payList');if(!el)return;
   el.innerHTML=S.payments.map((p,i)=>`<div class="item"><div class="row">
@@ -1232,11 +1244,7 @@ function docHtmlReceipt(){
 
 /* ---------- share ---------- */
 let shareKind=null;
-function shareInfo(kind){
-  if(kind==='quote'){const q=quoteData();return{name:'quote-'+q.no+'.docx',html:docHtmlQuote(),label:t('doc.quote'),total:C.total}}
-  if(kind==='invoice'){return{name:'invoice-'+(S._invNo||'invoice')+'.docx',html:docHtmlInvoice(),label:t('doc.inv'),total:C.total}}
-  return{name:'receipt-'+(S._recNo||'receipt')+'.docx',html:docHtmlReceipt(),label:t('doc.rec'),total:receiptCalc().paid};
-}
+function shareInfo(kind){return docOutHtml(kind)}
 function fillShare(tpl,info){
   return tpl.replaceAll('{customer}',S.client.name||t('doc.customer'))
     .replaceAll('{doc}',info.label)
@@ -1284,6 +1292,39 @@ function openShare(kind){
       if(note)note.textContent=t('sh.fallback');
     }
   });
+}
+
+/* ---------- document editing ---------- */
+function setEditBtn(act,on){const b=document.querySelector('[data-act="'+act+'"]');if(b)b.textContent=on?t('ed.done'):t('ed.edit')}
+function enterEdit(kind){
+  const isQ=kind==='quote';
+  const box=isQ?$('#qdoc'):$('#recdoc');if(!box)return;
+  const art=box.querySelector('article');if(!art)return;
+  if(isQ){qEditMode=true;qEditStart=box.innerHTML}else{rEditMode=true;rEditStart=box.innerHTML}
+  art.contentEditable='true';art.style.outline='2px dashed #b98a1c';art.style.outlineOffset='4px';
+  setEditBtn(isQ?'editQuote':'editReceipt',true);
+  art.focus();
+}
+function exitEdit(kind){
+  const isQ=kind==='quote';
+  const box=isQ?$('#qdoc'):$('#recdoc');if(!box)return;
+  const art=box.querySelector('article');
+  if(art){art.contentEditable='false';art.style.outline='';art.style.outlineOffset=''}
+  if(isQ){qEditMode=false;S.quoteEdit=(box.innerHTML===qEditStart)?S.quoteEdit:box.innerHTML;if(box.innerHTML===renderQuote())S.quoteEdit=''}
+  else{rEditMode=false;S.recEdit=(box.innerHTML===rEditStart)?S.recEdit:box.innerHTML;if(box.innerHTML===renderReceipt())S.recEdit=''}
+  setEditBtn(isQ?'editQuote':'editReceipt',false);
+  save();update();
+}
+function stripSvg(html){return html.replace(/<svg[\s\S]*?<\/svg>/g,'')}
+function docOutHtml(kind){
+  if(kind==='quote'){
+    const q=quoteData();
+    if(S.quoteEdit)return{name:'quote-'+q.no+'.docx',html:stripSvg(S.quoteEdit),label:t('doc.quote'),total:C.total};
+    return{name:'quote-'+q.no+'.docx',html:docHtmlQuote(),label:t('doc.quote'),total:C.total};
+  }
+  if(kind==='invoice'){return{name:'invoice-'+(S._invNo||'invoice')+'.docx',html:docHtmlInvoice(),label:t('doc.inv'),total:C.total}}
+  if(S.recEdit)return{name:'receipt-'+(S._recNo||'receipt')+'.docx',html:stripSvg(S.recEdit),label:t('doc.rec'),total:receiptCalc().paid};
+  return{name:'receipt-'+(S._recNo||'receipt')+'.docx',html:docHtmlReceipt(),label:t('doc.rec'),total:receiptCalc().paid};
 }
 
 /* ---------- update (recompute, then sync the page) ---------- */
@@ -1334,6 +1375,8 @@ function update(){
   O['sum.walls']=money(C.walls.total); O['sum.ceiling']=money(C.ceiling.total); O['sum.doors']=money(C.doorsTotal);
   O['sum.windows']=money(C.windowsTotal); O['sum.trim']=money(C.trimTotal); O['sum.others']=money(C.othersTotal); O['sum.materials']=money(C.matTotal);
   O['sum.extras']=C.extrasTotal>0?`${t('u.sumextras')} ${money(C.extrasTotal)} ${t('u.sumextras2')}`:t('u.noextras');
+  O['q.edited']=S.quoteEdit?t('ed.note'):'';
+  O['r.edited']=S.recEdit?t('ed.note'):'';
 
   document.querySelectorAll('[data-k]').forEach(el=>{
     if(el===document.activeElement)return;
@@ -1352,11 +1395,11 @@ function update(){
   document.querySelectorAll('[data-dim]').forEach(el=>{el.classList.toggle('off',!cond(el.dataset.dim))});
   const lk=S.company.logo||'-';
   if(lk!==logoKey){logoKey=lk;document.querySelectorAll('[data-logo]').forEach(el=>{el.innerHTML=logoHtml()})}
-  if(S.quoteOn)$('#qdoc').innerHTML=renderQuote();
+  if(S.quoteOn&&!qEditMode){const qh=S.quoteEdit||renderQuote();const qe=$('#qdoc');if(qe&&qe.innerHTML!==qh)qe.innerHTML=qh}
   syncMs();
   if(S.invoiceOn)$('#invdoc').innerHTML=renderInvoice();
   syncPay();
-  if(S.recOn)$('#recdoc').innerHTML=renderReceipt();
+  if(S.recOn&&!rEditMode){const rh=S.recEdit||renderReceipt();const re=$('#recdoc');if(re&&re.innerHTML!==rh)re.innerHTML=rh}
   save();
 }
 
@@ -1422,12 +1465,12 @@ const ACT={
     $('#quote').scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'});
   },
   copyQuote(){
-    const text=quoteText(), btn=$('#copyBtn'), ta=$('#qtext');
+    const text=S.quoteEdit?($('#qdoc').innerText||'').trim():quoteText(), btn=$('#copyBtn'), ta=$('#qtext');
     const done=()=>{btn.textContent=t('q.copied');setTimeout(()=>{btn.textContent=t('q.copy')},1800)};
     const fallback=()=>{ta.hidden=false;ta.value=text;ta.focus();ta.select();btn.textContent=t('q.copyfb');setTimeout(()=>{btn.textContent=t('q.copy')},3500)};
     if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,fallback)}else fallback();
   },
-  downloadQuote(){downloadDoc('quote-'+quoteData().no+'.docx',docHtmlQuote())},
+  downloadQuote(){const d=docOutHtml('quote');downloadDoc(d.name,d.html)},
   invoice(){
     if(!S.invoiceOn){S.inNo=(S.inNo||0)+1;S.inDate=Date.now();S.invoiceOn=true}
     $('#invoice').hidden=false;update();
@@ -1448,15 +1491,19 @@ const ACT={
   },
   addPayment(){const d=new Date(),pad=x=>String(x).padStart(2,'0');S.payments.push({date:d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()),method:'',amount:0,note:''});update()},
   copyReceipt(){
-    const text=receiptText(), btn=$('#copyRecBtn'), ta=$('#rectext');
+    const text=S.recEdit?($('#recdoc').innerText||'').trim():receiptText(), btn=$('#copyRecBtn'), ta=$('#rectext');
     const done=()=>{btn.textContent=t('i.copied');setTimeout(()=>{btn.textContent=t('r.copy')},1800)};
     const fallback=()=>{ta.hidden=false;ta.value=text;ta.focus();ta.select();btn.textContent=t('i.copyfb');setTimeout(()=>{btn.textContent=t('r.copy')},3500)};
     if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,fallback)}else fallback();
   },
-  downloadReceipt(){downloadDoc('receipt-'+(S._recNo||'receipt')+'.docx',docHtmlReceipt())},
+  downloadReceipt(){const d=docOutHtml('receipt');downloadDoc(d.name,d.html)},
   shareQuote(){openShare('quote')},
   shareInvoice(){openShare('invoice')},
   shareReceipt(){openShare('receipt')},
+  editQuote(){qEditMode?exitEdit('quote'):enterEdit('quote')},
+  editReceipt(){rEditMode?exitEdit('receipt'):enterEdit('receipt')},
+  resetQuoteEdit(){if(!S.quoteEdit&&!qEditMode)return;if(confirm(t('ed.confirm'))){S.quoteEdit='';if(qEditMode){qEditMode=false;const art=$('#qdoc article');if(art){art.contentEditable='false';art.style.outline=''}}setEditBtn('editQuote',false);save();update()}},
+  resetReceiptEdit(){if(!S.recEdit&&!rEditMode)return;if(confirm(t('ed.confirm'))){S.recEdit='';if(rEditMode){rEditMode=false;const art=$('#recdoc article');if(art){art.contentEditable='false';art.style.outline=''}}setEditBtn('editReceipt',false);save();update()}},
   autoMaterials(){
     if(!C)return;
     const cov=350, coats=2;
