@@ -65,7 +65,7 @@ footer{margin:34px 0 0;font-family:var(--mono);font-size:13px;text-align:center;
     <span class="kicker">For painting &amp; carpentry contractors</span>
     <h1>BestQuoteTool</h1>
     <p class="sub">Two working estimators built from 23+ years in the trade. Measure the job, price it with your own rates, and download a clean estimate your client can sign — right from your phone.</p>
-    <p class="price-line"><strong>$15/month</strong> &nbsp;Unlimited documents &nbsp;·&nbsp; 14-day free trial &nbsp;·&nbsp; English &amp; Spanish</p>
+    <p class="price-line"><strong>$15/month</strong> &nbsp;Unlimited documents &nbsp;·&nbsp; First 5 estimates free &nbsp;·&nbsp; English &amp; Spanish</p>
   </header>
 
   <div class="tools">
@@ -93,15 +93,25 @@ footer{margin:34px 0 0;font-family:var(--mono);font-size:13px;text-align:center;
   </section>
 
   <div class="subscribe" id="subscribe">
-    <h2>Start your 14-day free trial</h2>
-    <p>$15/month after the trial. Unlimited documents. Cancel anytime.</p>
+    <h2>Try it free — your first 5 estimates are on us</h2>
+    <p>Create your account with your email and make 5 real estimates with your own rates — download and print included, no card needed. Then $15/month for unlimited documents. Cancel anytime.</p>
+    <a class="btn" href="painting.html">Start free — make your 5 estimates</a>
     <!-- STRIPE SLOT: replace the href below with the Stripe Payment Link once Stripe is connected.
-         Product: BestQuoteTool — $15.00/month recurring, 14-day trial. -->
+         Product: BestQuoteTool — $15.00/month recurring. -->
     <a class="btn" id="subscribe-btn" href="#">Subscribe — $15/month</a>
     <p class="note">Secure checkout by Stripe.</p>
+    <p class="note">We never see your rates or your client data. Your saved quotes stay on your own device — yours until you delete them.</p>
   </div>
 
+  <section class="why" style="text-align:center">
+    <p style="font-size:17px;margin:0">Have something to add? <a href="mailto:frankg1718@gmail.com">Contact us</a> — we like to hear from you. This app is made for the contractor. Make it really yours.</p>
+  </section>
+
   <footer>BestQuoteTool · Estimates are editable templates for reference, not contracts or advice.</footer>
+  <script>
+  // Returning from a completed subscription checkout unlocks unlimited documents on this device.
+  if(new URLSearchParams(location.search).get('subscribed')==='1'){try{localStorage.setItem('bqt_subscribed','1')}catch(e){}}
+  </script>
 </div>
 </body>
 </html>
