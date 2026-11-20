@@ -1224,10 +1224,69 @@ function articleToDocHtml(html){
   }
   return out||html;
 }
+/* ---------- company logo in downloads ----------
+   The on-screen document header shows the loaded company logo
+   (S.company.logo on the painting page, CS.company.logo on the
+   carpentry/tasks pages — always a data URL). buildDocx embeds those
+   bytes as word/media/logo.* and draws the image at the top of the
+   document, the header place it holds on screen, so every downloaded
+   Quote/Invoice/Receipt carries it too. No logo loaded -> the package
+   is exactly what it was before (no media part, no drawing). */
+function _docLogo(){
+  var st=null;
+  try{if(typeof S!=='undefined'&&S&&S.company)st=S;}catch(e){}
+  if(!st){try{if(typeof CS!=='undefined'&&CS&&CS.company)st=CS;}catch(e){}}
+  var url=st?String(st.company.logo||'').replace(/\s+/g,''):'';
+  var m=/^data:(image\/(png|jpeg|gif|webp|bmp));base64,([A-Za-z0-9+/=]+)$/.exec(url);
+  if(!m)return null;
+  var bin;
+  try{bin=atob(m[3]);}catch(e){return null;}
+  if(!bin)return null;
+  var bytes=new Uint8Array(bin.length);
+  for(var i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+  var ext=m[2]==='jpeg'?'jpg':m[2];
+  return {name:'logo.'+ext,ext:ext,ct:m[1],data:bytes};
+}
+function _imgDims(b,ext){
+  var w=0,h=0,i,mk,ln;
+  try{
+    if(ext==='png'&&b.length>24){w=((b[16]<<24)|(b[17]<<16)|(b[18]<<8)|b[19])>>>0;h=((b[20]<<24)|(b[21]<<16)|(b[22]<<8)|b[23])>>>0;}
+    else if(ext==='gif'&&b.length>10){w=b[6]|(b[7]<<8);h=b[8]|(b[9]<<8);}
+    else if(ext==='jpg'){
+      for(i=2;i+9<b.length;){
+        if(b[i]!==0xFF){i++;continue;}
+        mk=b[i+1];
+        if(mk===0xFF||mk===0x01||(mk>=0xD0&&mk<=0xD9)){i+=2;continue;}
+        if(mk===0xC0||mk===0xC1||mk===0xC2){h=(b[i+5]<<8)|b[i+6];w=(b[i+7]<<8)|b[i+8];break;}
+        ln=(b[i+2]<<8)|b[i+3];
+        if(ln<2)break;
+        i+=2+ln;
+      }
+    }
+  }catch(e){}
+  return {w:w,h:h};
+}
+function _logoPara(logo){
+  var d=_imgDims(logo.data,logo.ext),cx=609600,cy=609600;
+  if(d.w>0&&d.h>0){
+    var s=Math.min(1,914400/(d.w*9525),914400/(d.h*9525));
+    cx=Math.max(1,Math.round(d.w*9525*s));cy=Math.max(1,Math.round(d.h*9525*s));
+  }
+  return '<w:p><w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0">'
+    +'<wp:extent cx="'+cx+'" cy="'+cy+'"/><wp:effectExtent l="0" t="0" r="0" b="0"/>'
+    +'<wp:docPr id="1" name="Company logo"/><wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"/></wp:cNvGraphicFramePr>'
+    +'<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">'
+    +'<pic:pic><pic:nvPicPr><pic:cNvPr id="0" name="'+logo.name+'"/><pic:cNvPicPr/></pic:nvPicPr>'
+    +'<pic:blipFill><a:blip r:embed="rIdLogo"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>'
+    +'<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="'+cx+'" cy="'+cy+'"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>'
+    +'</pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>';
+}
 function buildDocx(bodyHtml){
   var body=htmlToDocxBody(articleToDocHtml(bodyHtml));
+  var logo=_docLogo();
   var doc='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
-    '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'+
+    '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'+(logo?' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"':'')+'><w:body>'+
+    (logo?_logoPara(logo):'')+
     body+
     '<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/></w:sectPr>'+
     '</w:body></w:document>';
@@ -1236,17 +1295,27 @@ function buildDocx(bodyHtml){
     '<Default Extension="rels" ContentType="application/vnd.openxml-package.relationships+xml"/>'+
     '<Default Extension="xml" ContentType="application/xml"/>'+
     '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'+
+    (logo?'<Default Extension="'+logo.ext+'" ContentType="'+logo.ct+'"/>':'')+
     '</Types>';
   var rels='<?xml version="1.0" encoding="UTF-8"?>'+
     '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
     '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>'+
     '</Relationships>';
   var enc=new TextEncoder();
-  return zipStore([
+  var files=[
     {name:'[Content_Types].xml',data:enc.encode(ct)},
     {name:'_rels/.rels',data:enc.encode(rels)},
     {name:'word/document.xml',data:enc.encode(doc)}
-  ]);
+  ];
+  if(logo){
+    var drels='<?xml version="1.0" encoding="UTF-8"?>'+
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
+      '<Relationship Id="rIdLogo" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/'+logo.name+'"/>'+
+      '</Relationships>';
+    files.push({name:'word/_rels/document.xml.rels',data:enc.encode(drels)});
+    files.push({name:'word/media/'+logo.name,data:logo.data});
+  }
+  return zipStore(files);
 }
 function downloadDoc(filename,bodyHtml){
   const blob=buildDocx(bodyHtml);
