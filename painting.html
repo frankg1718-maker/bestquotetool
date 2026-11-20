@@ -1247,6 +1247,40 @@ function _docLogo(){
   var ext=m[2]==='jpeg'?'jpg':m[2];
   return {name:'logo.'+ext,ext:ext,ct:m[1],data:bytes};
 }
+/* §2d reopened sub-case — logo healing. A logo saved by an older build
+   can sit in state in a form _docLogo() cannot embed (e.g. an SVG data
+   URL): it displays on screen, but every download silently drops it.
+   On load, when the stored logo is not one _docLogo() can embed,
+   convert it once through the same canvas path the upload handler
+   uses and save the PNG back, so downloads carry it with no
+   re-upload. A logo already in an embeddable form (or no logo) is
+   left exactly as stored; a value that cannot be loaded as an image
+   at all is left untouched. Never blocks the page, never throws,
+   and runs at most once per page load. */
+var _logoHealStarted=false;
+function healLogo(){
+  if(_logoHealStarted)return;
+  _logoHealStarted=true;
+  try{
+    var url=String(S.company.logo||'');
+    if(!url)return;
+    if(_docLogo())return;
+    var img=new Image();
+    img.onload=function(){
+      try{
+        if(!img.width||!img.height)return;
+        var sc=Math.min(1,320/Math.max(img.width,img.height,1));
+        var c=document.createElement('canvas');
+        c.width=Math.max(1,Math.round(img.width*sc));c.height=Math.max(1,Math.round(img.height*sc));
+        c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+        var png=c.toDataURL('image/png');
+        if(png&&png.indexOf('data:image/png;base64,')===0&&png!==S.company.logo){S.company.logo=png;save();}
+      }catch(e){}
+    };
+    img.onerror=function(){};
+    img.src=url;
+  }catch(e){}
+}
 function _imgDims(b,ext){
   var w=0,h=0,i,mk,ln;
   try{
@@ -1739,6 +1773,7 @@ $('#logoFile').addEventListener('change',e=>{
 
 /* ---------- start ---------- */
 load();
+healLogo();
 render();
 applyI18n();
 update();
