@@ -172,6 +172,24 @@ textarea.in{resize:vertical;min-height:84px;line-height:1.4}
 .pgrid .blk{margin-bottom:0}
 .pthumb{max-width:110px;max-height:84px;border-radius:6px;border:1px solid var(--line);flex:none}
 .tchip{display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--line);border-radius:999px;padding:4px 6px 4px 12px;font-size:13px;font-weight:600}
+.ttabs{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.ttab{display:inline-flex;align-items:center;gap:2px;background:var(--surface2);border:1.5px solid var(--accent);color:var(--accent);border-radius:999px;padding:3px 5px 3px 8px;font-size:13px;font-weight:600}
+.ttab .tt{border:0;background:none;color:inherit;font:inherit;font-weight:600;cursor:pointer;padding:2px}
+.ttab .rm{width:22px;height:22px;font-size:13px;border-color:transparent;color:var(--danger)}
+.ttab.on{background:var(--accent);color:var(--on-accent)}
+.ttab.on .rm{color:#ffb3a7}
+.grip{flex:none;border:0;background:none;color:var(--muted);cursor:grab;font-size:14px;line-height:1;padding:4px 2px;touch-action:none;border-radius:6px}
+.grip:active{cursor:grabbing}
+.grip:focus-visible{outline:2px solid var(--accent);outline-offset:1px;color:var(--accent)}
+.ttab .grip{padding:0 1px;font-size:11px;color:inherit;opacity:.75}
+.gx{position:relative;padding-left:26px}
+.gx>.grip{position:absolute;left:5px;top:10px}
+.dragel{opacity:.5;box-shadow:0 10px 26px rgba(0,0,0,.4);pointer-events:none}
+body.dragging-on{user-select:none;-webkit-user-select:none}
+textarea.in.grow{resize:none;overflow:hidden}
+.tbody{background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:8px}
+.tstrip{background:#e7f3e7;border:1.5px solid #7fb069;color:#2d5a2d;border-radius:10px;padding:9px 12px;font-size:13.5px;text-align:center;margin-bottom:10px}
+.tchip.agree{background:#e7f3e7;border-color:#7fb069;color:#2d5a2d}
 .paidstamp{display:inline-block;margin-top:14px;padding:10px 22px;border:3px solid var(--accent);border-radius:10px;font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:.06em;color:var(--accent);transform:rotate(-4deg)}
 #printArea{display:none}
 @media print{
@@ -246,7 +264,7 @@ textarea.in{resize:vertical;min-height:84px;line-height:1.4}
           <div><dt data-i18n="c.sum.doors">Door installation</dt><dd data-cout="sum.doors"></dd></div>
           <div><dt data-i18n="c.sum.builtins">Built-ins</dt><dd data-cout="sum.builtins"></dd></div>
           <div><dt data-i18n="c.sum.custom">Custom work</dt><dd data-cout="sum.custom"></dd></div>
-          <div><dt data-i18n="c.sum.tasks">Tasks</dt><dd data-cout="sum.tasks"></dd></div>
+          <div><dt data-i18n="c.sum.tasks">Task &amp; Other Trades</dt><dd data-cout="sum.tasks"></dd></div>
           <div><dt data-i18n="c.sum.materials">Materials</dt><dd data-cout="sum.materials"></dd></div>
         </dl>
         <div class="stotal"><span data-i18n="c.sum.total">Total estimate</span><b data-cout="total"></b></div>
@@ -362,7 +380,7 @@ function docHtml(title,no,date,meta,groups,extra){
   let h=`<h1>${esc(title)}</h1><p><b>${esc(no)}</b> — ${esc(date)}</p><p>${meta}</p>`;
   groups.forEach(g=>{
     h+=`<h2>${esc(g.title)} — ${money(g.sub)}</h2><table border="1" cellpadding="6" cellspacing="0">`;
-    g.lines.forEach(l=>{h+=`<tr><td>${esc(l.d)}${l.s?`<br><small>${esc(l.s)}</small>`:''}${l.why?`<br><i>Why: ${esc(l.why)}</i>`:''}</td><td align="right">${money(l.a)}</td></tr>`});
+    g.lines.forEach(l=>{h+=`<tr><td>${esc(l.d)}${l.s?`<br><small>${esc(l.s)}</small>`:''}${l.why?`<br><i>Why: ${esc(l.why)}</i>`:''}${l.det?l.det.map(sec=>`<br><small><b>${esc(sec.h)}</b>${sec.b?`: ${esc(sec.b)}`:''}${sec.rows?sec.rows.map(r=>`<br>${esc(r.l)}${r.v?` — ${esc(r.v)}`:''}`).join(''):''}</small>`).join(''):''}</td><td align="right">${money(l.a)}</td></tr>`});
     h+='</table>';
   });
   if(extra)h+=extra;
@@ -621,12 +639,22 @@ function cReceiptCalc(total,payments){
   const paid=cR2(payments.reduce((s,p)=>s+cNum(p.amount),0));
   return{paid,balance:cR2(total-paid)};
 }
+function cTaskExtras(task){
+  let x=0;
+  ((task&&task.tabs)||[]).forEach(tb=>{
+    if(!tb||!Array.isArray(tb.rows))return;
+    if(tb.kind==='mats')tb.rows.forEach(r=>{x+=cNum(r.qty)*cNum(r.cost)});
+    else if(tb.kind==='opts')tb.rows.forEach(r=>{if(r.inc)x+=cNum(r.price)});
+  });
+  return cR2(x);
+}
 function cTaskAmount(task,laborRate){
   if(!task)return 0;
   const m=task.mode;
-  if(m==='hourly')return cR2(cNum(task.hours)*cNum(laborRate));
-  if(m==='flat')return cR2(cNum(task.flat));
-  return cR2(cNum(task.qty)*cNum(task.rate));
+  const base=m==='hourly'?cR2(cNum(task.hours)*cNum(laborRate))
+    :m==='flat'?cR2(cNum(task.flat))
+    :cR2(cNum(task.qty)*cNum(task.rate));
+  return cR2(base+cTaskExtras(task));
 }
 function cTaskMeasSum(task){
   return cR2((task&&task.meas||[]).reduce((s,m)=>s+cNum(m.qty),0));
@@ -652,18 +680,19 @@ Object.assign(STR.en,{
 'c.mats.title':'Materials','c.mats.add':'+ Add material','c.mats.hint':'Materials change per job. Edit freely — the documents show the materials total and your line items.',
 'c.client.title':'Client & terms','c.client.hint':'Client details and terms appear on every document.',
 'c.prof.title':'Contractor profile','c.prof.name':'Profile name','c.prof.namePh':'e.g. Franklin — FG BestWay','c.prof.save':'Save profile','c.prof.load':'Load','c.prof.del':'Delete','c.prof.hint':'Profiles live in this browser (until the web app with accounts arrives). A profile keeps your rate card, company rates and saved documents.',
-'c.prof.savedDocs':'Saved documents','c.prof.empty':'No saved documents yet. They are saved automatically when you generate them.','c.prof.view':'View','c.prof.print':'Print','c.prof.saved':'Profile saved.','c.prof.loaded':'Profile loaded.','c.prof.deleted':'Profile deleted.','c.prof.noname':'Type a profile name first.',
+'c.prof.savedDocs':'Saved documents','c.prof.empty':'No saved documents yet. They are saved automatically when you generate them.','c.prof.view':'View','c.prof.print':'Print','c.prof.saved':'Profile saved.','c.prof.loaded':'Profile loaded.','c.prof.deleted':'Profile deleted.','c.prof.noname':'Type a profile name first.','c.prof.kept':'Kept the existing saved job \u2014 nothing was overwritten.','c.prof.trashed':'Moved to the Trash \u2014 restore it from the Trash below.','c.prof.overwrite':'A saved job named','c.prof.overwrite2':'Save over it?','c.prof.version':'Version','c.prof.updated':'Updated','c.prof.by':'by','c.trash.title':'Trash','c.trash.empty':'Trash is empty. Deleted jobs and documents land here and can be restored.','c.trash.restore':'Restore','c.trash.restored':'Restored from the Trash.','c.trash.forever':'Delete forever','c.trash.confirm':'Sure? Tap again to delete forever','c.trash.gone':'Deleted for good.','c.trash.job':'Saved job','c.trash.doc':'Document',
 'c.doc.estimate':'Estimate','c.doc.invoice':'Invoice','c.doc.receipt':'Receipt','c.doc.valid':'Valid until','c.doc.prep':'Prepared for','c.doc.prop':'Property','c.doc.total':'Total','c.doc.deposit':'Deposit to start the project','c.doc.baldue':'Balance due on completion','c.doc.accept':'Client acceptance — I agree to the work and price above.','c.doc.sign':'Signature','c.doc.pname':'Print name','c.doc.mats':'Materials','c.doc.matsline':'Lumber, hardware and supplies for this job','c.doc.photos':'Site photos & sketches','c.doc.measurements':'Measurements','c.doc.payments':'Payments received','c.doc.paid':'Total paid','c.doc.balance':'Balance due','c.doc.paidfull':'PAID IN FULL','c.doc.invref':'Invoice','c.doc.method':'Method','c.doc.date':'Date','c.doc.amount':'Amount',
 'c.pay.title':'Payments','c.pay.add':'+ Add payment','c.pay.empty':'No payments recorded yet.','c.pay.date':'Date','c.pay.method':'Method','c.pay.methodPh':'e.g. Cash, Zelle, Check','c.pay.amount':'Amount $','c.pay.note':'Note','c.pay.rm':'Remove payment',
 'c.sh.title':'Share this document','c.sh.file':'Word (.docx)','c.sh.msglabel':'Your message to the customer','c.sh.hint':'{customer} = their name \u00b7 {doc} = Estimate / Invoice / Receipt \u00b7 {company} = your company \u00b7 {total} = the total \u00b7 {phone} = your phone','c.sh.preview':'Preview','c.sh.send':'Share now','c.sh.dl':'Just download instead','c.sh.cancel':'Cancel','c.sh.sent':'Your file is downloading and your message was copied \u2014 open your email, attach the file and paste the message.','c.sh.template':'Hi {customer} \u2014 here is your {doc} from {company}. Total: {total}. The Word file is attached so you can open and review it. Any questions, call me at {phone}.','c.sh.share':'Share','c.ed.edit':'Edit document','c.ed.done':'Done editing','c.ed.reset':'Back to original','c.ed.confirm':'Sure? Tap again to reset','c.ed.note':'You edited this document \u2014 downloads, copies and shares use your version.',
 'c.tools.back':'← Back','c.tools.reset':'Reset','c.tools.copy':'Copy text','c.tools.copied':'Copied','c.tools.copyfb':'Select and copy the text below','c.tools.word':'Download Word','c.tools.print':'Print','c.tools.hint':'The document updates as you change the estimate. Back returns to the estimate without losing anything; Reset clears the generated document (your estimate data is kept).',
 'c.est.saved':'Estimate saved to profile.','c.inv.saved':'Invoice saved to profile.','c.rec.saved':'Receipt saved to profile.',
-'c.sum.tasks':'Tasks','c.doc.tasks':'Tasks',
-'c.task.title':'Tasks — any handyman job','c.task.hint':'For anything that is not trim, doors or built-ins: describe the task, pick a type, add measurements, choose how it is priced. The type list is yours — customize it below.','c.task.add':'+ Add task','c.task.empty':'No tasks yet. Add plumbing, electrical, drywall or any other handyman work.',
+'c.sum.tasks':'Task & Other Trades','c.doc.tasks':'Task & Other Trades',
+'c.task.title':'Task & Other Trades','c.task.hint':'For anything that is not trim, doors or built-ins: describe the task, pick a type, choose how it is priced — then shape it with tabs: measurements, materials, a checklist, options, the agreement. The type list is yours — customize it below.','c.task.add':'+ Add task','c.task.empty':'No tasks yet. Add plumbing, electrical, drywall or any other handyman work.',
 'c.task.desc':'Description','c.task.descPh':'e.g. Fix leaking kitchen faucet','c.task.type':'Type','c.task.mode':'Pricing','c.task.modeUnit':'Per unit','c.task.modeHourly':'Hourly','c.task.modeFlat':'Flat','c.task.qty':'Quantity','c.task.rate':'Rate $','c.task.hours':'Hours','c.task.flat':'Flat amount $','c.task.laborRate':'Labor rate (from rate card)','c.task.photo':'Linked photo','c.task.noPhoto':'No photo','c.task.notes':'Notes (shown on documents)','c.task.notesPh':'e.g. includes parts up to $50','c.task.amount':'Amount','c.task.rm':'Remove task','c.task.untitled':'Task',
 'c.task.meas':'Measurements','c.task.measAdd':'+ Add measurement','c.task.useQty':'→ Use for quantity','c.task.mLabel':'What','c.task.mQty':'Qty','c.task.mUnit':'Unit','c.task.mRm':'Remove measurement',
 'c.task.types':'Task types','c.task.typesHint':'Your own type list. The presets cannot be removed.','c.task.newType':'New type name','c.task.newTypePh':'e.g. Roofing','c.task.addType':'Add type',
 'c.ttype.carpentry':'Carpentry','c.ttype.plumbing':'Plumbing','c.ttype.electrical':'Electrical','c.ttype.drywall':'Drywall','c.ttype.masonry':'Masonry','c.ttype.general':'General',
+'c.tab.strip':'✎ Every title, description & measurement is editable. Your words, your numbers — make it yours.','c.tab.add':'＋ Add tab','c.tab.of10':'of 10 tabs','c.tab.max':'Maximum 10 tabs per task — every tab is yours to customize.','c.tab.rm':'Remove tab','c.drag':'Drag to reorder','c.tab.titlePh':'Tab title','c.tab.pick':'Add a tab','c.tab.pickHint':'Pick the kind of tab this task needs. You can rename it, fill it, or remove it anytime.','c.tabk.desc':'Description','c.tabk.meas':'Measurements','c.tabk.mats':'Materials & Supplies','c.tabk.sched':'Schedule & Frequency','c.tabk.check':'Checklist','c.tabk.opts':'Options & Add-ons','c.tabk.photos':'Photos','c.tabk.notes':'Notes & Terms','c.tabk.descD':'The scope — what is included, what is not','c.tabk.measD':'Sq ft, rooms, panes, tree size — the numbers behind the price','c.tabk.matsD':'Things consumed on the job, apart from the work','c.tabk.schedD':'Dates, visit rhythm — weekly, bi-weekly, one-time','c.tabk.checkD':'The tick-off list the crew follows on site','c.tabk.optsD':'Extras the customer can accept right on the quote','c.tabk.photosD':'Before & after pictures, inside the document','c.tabk.notesD':'Validity, warranty, the fine print that protects you','c.tab.agree':'✓ Agreement in the quote','c.tab.textPh':'Write it your way…','c.freq.once':'One-time','c.freq.weekly':'Weekly','c.freq.biweekly':'Bi-weekly','c.freq.monthly':'Monthly','c.freq.custom':'Custom','c.tabs.freq':'Frequency','c.tabs.notesPh':'e.g. First visit Tue 9:00 AM, then every two weeks','c.tabc.done':'Done','c.tabc.item':'Item','c.tabc.add':'+ Add item','c.tabc.itemPh':'e.g. Kitchen counters','c.tabo.name':'Option','c.tabo.price':'Price $','c.tabo.inc':'Include','c.tabo.add':'+ Add option','c.tabo.rm':'Remove option','c.tabo.notInc':'(not included)','c.tabm.add':'+ Add supply','c.tpl.title':'My Templates','c.tpl.name':'Template name','c.tpl.hint':'Using a template adds a working copy to this job — add or remove tabs for this house freely; your saved template stays untouched. Want the change forever? One tap: “Also update my template.”','c.tpl.save':'＋ Save current job as a template','c.tpl.namePh':'Template name — e.g. Deep Clean — Standard','c.tpl.use':'Use template','c.tpl.del':'Delete template','c.tpl.usedPre':'used','c.tpl.usedPost':'times','c.tpl.tasks':'tasks','c.tpl.update':'Also update my template','c.tpl.from':'This job came from a template:','c.tpl.empty':'No templates yet. Set up a job you repeat, then save it here.','c.tpl.needTasks':'Add at least one task first.','c.tpl.saved':'Template saved.','c.tpl.updated':'Template updated.',
 'unit.project':'project'
 });
 Object.assign(STR.es,{
@@ -684,18 +713,19 @@ Object.assign(STR.es,{
 'c.mats.title':'Materiales','c.mats.add':'+ Agregar material','c.mats.hint':'Los materiales cambian por trabajo. Edite libremente — los documentos muestran el total y sus líneas.',
 'c.client.title':'Cliente y términos','c.client.hint':'Los datos del cliente y los términos aparecen en cada documento.',
 'c.prof.title':'Perfil del contratista','c.prof.name':'Nombre del perfil','c.prof.namePh':'ej. Franklin — FG BestWay','c.prof.save':'Guardar perfil','c.prof.load':'Cargar','c.prof.del':'Eliminar','c.prof.hint':'Los perfiles viven en este navegador (hasta que llegue la aplicación web con cuentas). Un perfil guarda su tarifario y sus documentos.',
-'c.prof.savedDocs':'Documentos guardados','c.prof.empty':'Sin documentos guardados aún. Se guardan automáticamente al generarlos.','c.prof.view':'Ver','c.prof.print':'Imprimir','c.prof.saved':'Perfil guardado.','c.prof.loaded':'Perfil cargado.','c.prof.deleted':'Perfil eliminado.','c.prof.noname':'Escriba un nombre de perfil primero.',
+'c.prof.savedDocs':'Documentos guardados','c.prof.empty':'Sin documentos guardados aún. Se guardan automáticamente al generarlos.','c.prof.view':'Ver','c.prof.print':'Imprimir','c.prof.saved':'Perfil guardado.','c.prof.loaded':'Perfil cargado.','c.prof.deleted':'Perfil eliminado.','c.prof.noname':'Escriba un nombre de perfil primero.','c.prof.kept':'Se mantuvo el trabajo guardado \u2014 no se sobrescribi\u00f3 nada.','c.prof.trashed':'Movido a la papelera \u2014 resta\u00farelo desde la papelera abajo.','c.prof.overwrite':'Ya existe un trabajo guardado llamado','c.prof.overwrite2':'\u00bfGuardar encima?','c.prof.version':'Versi\u00f3n','c.prof.updated':'Actualizado','c.prof.by':'por','c.trash.title':'Papelera','c.trash.empty':'La papelera est\u00e1 vac\u00eda. Los trabajos y documentos eliminados llegan aqu\u00ed y se pueden restaurar.','c.trash.restore':'Restaurar','c.trash.restored':'Restaurado de la papelera.','c.trash.forever':'Borrar para siempre','c.trash.confirm':'\u00bfSeguro? Toque otra vez para borrar','c.trash.gone':'Borrado para siempre.','c.trash.job':'Trabajo guardado','c.trash.doc':'Documento',
 'c.doc.estimate':'Estimado','c.doc.invoice':'Factura','c.doc.receipt':'Recibo','c.doc.valid':'Válido hasta','c.doc.prep':'Preparado para','c.doc.prop':'Propiedad','c.doc.total':'Total','c.doc.deposit':'Depósito para comenzar el proyecto','c.doc.baldue':'Saldo al terminar el trabajo','c.doc.accept':'Aceptación del cliente — Acepto el trabajo y el precio indicados.','c.doc.sign':'Firma','c.doc.pname':'Nombre en letra de molde','c.doc.mats':'Materiales','c.doc.matsline':'Madera, herrajes y materiales para este trabajo','c.doc.photos':'Fotos y bocetos','c.doc.measurements':'Medidas','c.doc.payments':'Pagos recibidos','c.doc.paid':'Total pagado','c.doc.balance':'Saldo pendiente','c.doc.paidfull':'PAGADO EN SU TOTALIDAD','c.doc.invref':'Factura','c.doc.method':'Método','c.doc.date':'Fecha','c.doc.amount':'Monto',
 'c.pay.title':'Pagos','c.pay.add':'+ Agregar pago','c.pay.empty':'Sin pagos registrados aún.','c.pay.date':'Fecha','c.pay.method':'Método','c.pay.methodPh':'ej. Efectivo, Zelle, Cheque','c.pay.amount':'Monto $','c.pay.note':'Nota','c.pay.rm':'Eliminar pago',
 'c.sh.title':'Compartir este documento','c.sh.file':'Word (.docx)','c.sh.msglabel':'Su mensaje para el cliente','c.sh.hint':'{customer} = su nombre \u00b7 {doc} = Estimado / Factura / Recibo \u00b7 {company} = su empresa \u00b7 {total} = el total \u00b7 {phone} = su tel\u00e9fono','c.sh.preview':'Vista previa','c.sh.send':'Compartir ahora','c.sh.dl':'Solo descargar','c.sh.cancel':'Cancelar','c.sh.sent':'Su archivo se est\u00e1 descargando y su mensaje fue copiado \u2014 abra su correo, adjunte el archivo y pegue el mensaje.','c.sh.template':'Hola {customer} \u2014 aqu\u00ed est\u00e1 su {doc} de {company}. Total: {total}. El archivo Word va adjunto para que pueda abrirlo y revisarlo. Cualquier pregunta, ll\u00e1meme al {phone}.','c.sh.share':'Compartir','c.ed.edit':'Editar documento','c.ed.done':'Terminar de editar','c.ed.reset':'Volver al original','c.ed.confirm':'\u00bfSeguro? Toque otra vez','c.ed.note':'Usted edit\u00f3 este documento \u2014 las descargas, copias y compartidos usan su versi\u00f3n.',
 'c.tools.back':'← Atrás','c.tools.reset':'Restablecer','c.tools.copy':'Copiar texto','c.tools.copied':'Copiado','c.tools.copyfb':'Seleccione y copie el texto de abajo','c.tools.word':'Descargar Word','c.tools.print':'Imprimir','c.tools.hint':'El documento se actualiza al cambiar el estimado. Atrás vuelve al estimado sin perder nada; Restablecer limpia el documento generado (sus datos se conservan).',
 'c.est.saved':'Estimado guardado en el perfil.','c.inv.saved':'Factura guardada en el perfil.','c.rec.saved':'Recibo guardado en el perfil.',
-'c.sum.tasks':'Trabajos','c.doc.tasks':'Trabajos',
-'c.task.title':'Trabajos — cualquier tarea','c.task.hint':'Para lo que no sea molduras, puertas o empotrados: describa la tarea, elija un tipo, agregue medidas y elija cómo se cobra. La lista de tipos es suya — personalícela abajo.','c.task.add':'+ Agregar trabajo','c.task.empty':'Sin trabajos aún. Agregue plomería, electricidad, drywall u otro trabajo.',
+'c.sum.tasks':'Tarea y otros oficios','c.doc.tasks':'Tarea y otros oficios',
+'c.task.title':'Tarea y otros oficios','c.task.hint':'Para lo que no sea molduras, puertas o empotrados: describa la tarea, elija un tipo y cómo se cobra — y luego dele forma con pestañas: medidas, materiales, una lista de verificación, opciones, el acuerdo. La lista de tipos es suya — personalícela abajo.','c.task.add':'+ Agregar trabajo','c.task.empty':'Sin trabajos aún. Agregue plomería, electricidad, drywall u otro trabajo.',
 'c.task.desc':'Descripción','c.task.descPh':'ej. Arreglar llave de cocina que gotea','c.task.type':'Tipo','c.task.mode':'Cobro','c.task.modeUnit':'Por unidad','c.task.modeHourly':'Por hora','c.task.modeFlat':'Monto fijo','c.task.qty':'Cantidad','c.task.rate':'Tarifa $','c.task.hours':'Horas','c.task.flat':'Monto fijo $','c.task.laborRate':'Tarifa por hora (del tarifario)','c.task.photo':'Foto enlazada','c.task.noPhoto':'Sin foto','c.task.notes':'Notas (aparecen en los documentos)','c.task.notesPh':'ej. incluye materiales hasta $50','c.task.amount':'Monto','c.task.rm':'Eliminar trabajo','c.task.untitled':'Trabajo',
 'c.task.meas':'Medidas','c.task.measAdd':'+ Agregar medida','c.task.useQty':'→ Usar como cantidad','c.task.mLabel':'Qué','c.task.mQty':'Cant.','c.task.mUnit':'Unidad','c.task.mRm':'Eliminar medida',
 'c.task.types':'Tipos de trabajo','c.task.typesHint':'Su propia lista de tipos. Los predefinidos no se pueden eliminar.','c.task.newType':'Nombre del nuevo tipo','c.task.newTypePh':'ej. Techos','c.task.addType':'Agregar tipo',
 'c.ttype.carpentry':'Carpintería','c.ttype.plumbing':'Plomería','c.ttype.electrical':'Electricidad','c.ttype.drywall':'Drywall','c.ttype.masonry':'Mampostería','c.ttype.general':'General',
+'c.tab.strip':'✎ Cada título, descripción y medida es editable. Sus palabras, sus números — hágalo suyo.','c.tab.add':'＋ Agregar pestaña','c.tab.of10':'de 10 pestañas','c.tab.max':'Máximo 10 pestañas por trabajo — cada pestaña es suya para personalizar.','c.tab.rm':'Quitar pestaña','c.drag':'Arrastrar para reordenar','c.tab.titlePh':'Título de la pestaña','c.tab.pick':'Agregar una pestaña','c.tab.pickHint':'Elija el tipo de pestaña que este trabajo necesita. Puede renombrarla, llenarla o quitarla cuando quiera.','c.tabk.desc':'Descripción','c.tabk.meas':'Medidas','c.tabk.mats':'Materiales y suministros','c.tabk.sched':'Horario y frecuencia','c.tabk.check':'Lista de verificación','c.tabk.opts':'Opciones y extras','c.tabk.photos':'Fotos','c.tabk.notes':'Notas y términos','c.tabk.descD':'El alcance — qué incluye y qué no','c.tabk.measD':'Pies cuadrados, cuartos, vidrios, tamaño del árbol — los números detrás del precio','c.tabk.matsD':'Lo que se consume en el trabajo, aparte de la mano de obra','c.tabk.schedD':'Fechas, ritmo de visitas — semanal, quincenal, una vez','c.tabk.checkD':'La lista que el equipo marca en el sitio','c.tabk.optsD':'Extras que el cliente puede aceptar en la misma cotización','c.tabk.photosD':'Fotos de antes y después, dentro del documento','c.tabk.notesD':'Validez, garantía, la letra pequeña que lo protege','c.tab.agree':'✓ Acuerdo en la cotización','c.tab.textPh':'Escríbalo a su manera…','c.freq.once':'Una vez','c.freq.weekly':'Semanal','c.freq.biweekly':'Quincenal','c.freq.monthly':'Mensual','c.freq.custom':'Personalizado','c.tabs.freq':'Frecuencia','c.tabs.notesPh':'ej. Primera visita martes 9:00 AM, luego cada dos semanas','c.tabc.done':'Listo','c.tabc.item':'Ítem','c.tabc.add':'+ Agregar ítem','c.tabc.itemPh':'ej. Encimeras de la cocina','c.tabo.name':'Opción','c.tabo.price':'Precio $','c.tabo.inc':'Incluir','c.tabo.add':'+ Agregar opción','c.tabo.rm':'Eliminar opción','c.tabo.notInc':'(no incluido)','c.tabm.add':'+ Agregar suministro','c.tpl.title':'Mis plantillas','c.tpl.name':'Nombre de la plantilla','c.tpl.hint':'Usar una plantilla agrega una copia de trabajo a este trabajo — agregue o quite pestañas para esta casa libremente; su plantilla guardada no se toca. ¿Quiere el cambio para siempre? Un toque: «También actualizar mi plantilla».','c.tpl.save':'＋ Guardar este trabajo como plantilla','c.tpl.namePh':'Nombre de la plantilla — ej. Limpieza profunda — Estándar','c.tpl.use':'Usar plantilla','c.tpl.del':'Eliminar plantilla','c.tpl.usedPre':'usada','c.tpl.usedPost':'veces','c.tpl.tasks':'trabajos','c.tpl.update':'También actualizar mi plantilla','c.tpl.from':'Este trabajo vino de una plantilla:','c.tpl.empty':'Sin plantillas aún. Prepare un trabajo que repite y guárdelo aquí.','c.tpl.needTasks':'Agregue al menos un trabajo primero.','c.tpl.saved':'Plantilla guardada.','c.tpl.updated':'Plantilla actualizada.',
 'unit.project':'proyecto'
 });
 STR.en['app.title']='Carpentry & Task Estimator';
@@ -716,7 +746,21 @@ const cMkDetail=()=>({text:'',item:-1});
 const cMkPay=()=>({date:new Date().toISOString().slice(0,10),method:'',amount:0,note:''});
 const C_TASK_PRESETS=['carpentry','plumbing','electrical','drywall','masonry','general'];
 const cTaskTypeName=ty=>ty&&ty.indexOf('x:')===0?ty.slice(2):t('c.ttype.'+(ty||'general'));
-const cMkTask=()=>({desc:'',type:'general',meas:[],qty:1,mode:'unit',rate:0,hours:0,flat:0,photo:-1,notes:''});
+const cMkTab=kind=>({kind:kind,title:'',text:'',freq:'once',rows:[]});
+const cDefTabs=()=>[cMkTab('desc'),cMkTab('meas'),cMkTab('notes')];
+const cMkTask=()=>({desc:'',type:'general',meas:[],qty:1,mode:'unit',rate:0,hours:0,flat:0,photo:-1,notes:'',tabs:cDefTabs()});
+function cEnsureTabs(tk){
+  if(!tk)return;
+  if(!Array.isArray(tk.tabs)||!tk.tabs.length)tk.tabs=cDefTabs();
+  tk.tabs.forEach((tb,j)=>{
+    if(!tb||typeof tb!=='object'||C_TAB_KINDS.indexOf(tb.kind)<0){tb={kind:'desc',title:'',text:'',freq:'once',rows:[]};tk.tabs[j]=tb}
+    if(typeof tb.title!=='string')tb.title='';
+    if(typeof tb.text!=='string')tb.text='';
+    if(typeof tb.freq!=='string'||!tb.freq)tb.freq='once';
+    if(!Array.isArray(tb.rows))tb.rows=[];
+  });
+}
+const cTabFirstIdx=(tk,kind)=>tk.tabs.findIndex(x=>x.kind===kind);
 const cMkTMeas=()=>({label:'',qty:0,unit:'each',note:''});
 function cFresh(){return{
   lang:'en',
@@ -735,7 +779,7 @@ function cFresh(){return{
   docNos:{q:0,i:0,r:0},
   estOn:false,qdate:0,invOn:false,inDate:0,recOn:false,rDate:0,
   savedDocs:[],
-  shareMsg:'',estEdit:'',recEdit:''
+  shareMsg:'',estEdit:'',recEdit:'',jobTpl:''
 }}
 let CS=cFresh(), CC=null;
 let cEstEditMode=false, cRecEditMode=false, cEstEditStart='', cRecEditStart='';
@@ -749,12 +793,14 @@ function cLoad(){try{
   if(d.qdate)CS.qdate=d.qdate; if(d.inDate)CS.inDate=d.inDate; if(d.rDate)CS.rDate=d.rDate;
   if(d.lang==='en'||d.lang==='es')CS.lang=d.lang;
   if(typeof d.shareMsg==='string')CS.shareMsg=d.shareMsg;
+  if(typeof d.jobTpl==='string')CS.jobTpl=d.jobTpl;
+  CS.tasks.forEach(cEnsureTabs);
   if(typeof d.estEdit==='string')CS.estEdit=d.estEdit;
   if(typeof d.recEdit==='string')CS.recEdit=d.recEdit;
 }catch(e){}}
 let cSaveT=0;
 function cSave(){clearTimeout(cSaveT);cSaveT=setTimeout(()=>{try{
-  localStorage.setItem(CSTORE,JSON.stringify({rates:CS.rates,customRates:CS.customRates,items:CS.items,tasks:CS.tasks,customTaskTypes:CS.customTaskTypes,materials:CS.materials,measurements:CS.measurements,photos:CS.photos,milestones:CS.milestones,client:CS.client,terms:CS.terms,payments:CS.payments,profileName:CS.profileName,docNos:CS.docNos,estOn:CS.estOn,qdate:CS.qdate,invOn:CS.invOn,inDate:CS.inDate,recOn:CS.recOn,rDate:CS.rDate,savedDocs:CS.savedDocs.slice(-30),lang:CS.lang,company:CS.company,shareMsg:CS.shareMsg,estEdit:CS.estEdit,recEdit:CS.recEdit}));
+  localStorage.setItem(CSTORE,JSON.stringify({rates:CS.rates,customRates:CS.customRates,items:CS.items,tasks:CS.tasks,customTaskTypes:CS.customTaskTypes,materials:CS.materials,measurements:CS.measurements,photos:CS.photos,milestones:CS.milestones,client:CS.client,terms:CS.terms,payments:CS.payments,profileName:CS.profileName,docNos:CS.docNos,estOn:CS.estOn,qdate:CS.qdate,invOn:CS.invOn,inDate:CS.inDate,recOn:CS.recOn,rDate:CS.rDate,savedDocs:CS.savedDocs.slice(-30),lang:CS.lang,company:CS.company,shareMsg:CS.shareMsg,estEdit:CS.estEdit,recEdit:CS.recEdit,jobTpl:CS.jobTpl}));
 }catch(e){
   const w=document.querySelector('[data-cout="c.photoWarn"]');
   if(w)w.textContent=t('c.photos.quota');
@@ -846,28 +892,168 @@ function cSecItems(){
   return `<section class="blk"><div class="bh"><h2>${t('c.items.title')}</h2><div style="display:flex;gap:10px;align-items:center"><span class="sum" data-cout="c.itemsTotal"></span><button class="btn small" type="button" data-cact="addItem">${t('c.items.add')}</button></div></div><div class="bb">
     ${rows||`<p class="hint">${t('c.items.empty')}</p>`}</div></section>`;
 }
+/* ---------- Task & Other Trades: tabs + templates (Nov 17, 2026) ---------- */
+let cOpenTab={}, cPicker=-1;
+const C_TAB_KINDS=['desc','meas','mats','sched','check','opts','photos','notes'];
+const CTPL='carpentry-task-templates-v1';
+function cTpls(){try{const a=JSON.parse(localStorage.getItem(CTPL)||'[]');return Array.isArray(a)?a:[]}catch(e){return[]}}
+function cPutTpls(a){try{localStorage.setItem(CTPL,JSON.stringify(a));return true}catch(e){return false}}
+function cTaskHasAgree(tk){
+  const seen={};let found=false;
+  (tk.tabs||[]).forEach(tb=>{const first=!seen[tb.kind];seen[tb.kind]=1;if(tb.kind!=='notes')return;const tx=first?tk.notes:tb.text;if(tx&&String(tx).trim())found=true});
+  return found;
+}
+/* Document content for one task: det = printable tab sections (in tab order);
+   agree = Notes & Terms blocks (the agreement inside the quote);
+   hasPhotos = a Photos tab already names the linked photo. The FIRST tab of
+   each kind reads the task's canonical fields (desc / meas / notes), so data
+   saved before tabs existed is never orphaned; extra tabs of the same kind
+   keep their own text/rows. The first Description tab is the line title
+   itself, so it is not repeated as a section. */
+function cTaskDet(tk){
+  const det=[],agree=[];let hasPhotos=false;const seen={};
+  (tk.tabs||[]).forEach(tb=>{
+    const first=!seen[tb.kind];seen[tb.kind]=1;
+    const h=tb.title||t('c.tabk.'+tb.kind);
+    if(tb.kind==='meas'){
+      const rows=first?(tk.meas||[]):(tb.rows||[]);
+      const rr=rows.filter(m=>m.label||+m.qty).map(m=>({l:(m.label||t('c.task.mLabel'))+(m.note?' — '+m.note:''),v:n(m.qty)+' '+cUnitName(m.unit)}));
+      if(rr.length)det.push({h,rows:rr});
+    }else if(tb.kind==='notes'){
+      const tx=first?tk.notes:tb.text;
+      if(tx&&String(tx).trim())agree.push({h,b:tx});
+    }else if(tb.kind==='mats'){
+      const rr=(tb.rows||[]).filter(r=>r.name||+r.qty||+r.cost).map(r=>({l:r.name||t('mat.name'),v:n(r.qty)+' × '+money(r.cost)}));
+      if(rr.length)det.push({h,rows:rr});
+    }else if(tb.kind==='sched'){
+      det.push({h,b:tb.text?t('c.freq.'+tb.freq)+' — '+tb.text:t('c.freq.'+tb.freq)});
+    }else if(tb.kind==='check'){
+      const rr=(tb.rows||[]).filter(r=>r.text).map(r=>({l:(r.done?'☑ ':'☐ ')+r.text,v:''}));
+      if(rr.length)det.push({h,rows:rr});
+    }else if(tb.kind==='opts'){
+      const rr=(tb.rows||[]).filter(r=>r.name||+r.price).map(r=>({l:(r.name||t('c.tabo.name'))+(r.inc?'':' '+t('c.tabo.notInc')),v:r.inc?money(r.price):'—'}));
+      if(rr.length)det.push({h,rows:rr});
+    }else if(tb.kind==='photos'){
+      if(tk.photo>=0&&CS.photos[tk.photo]){hasPhotos=true;det.push({h,b:CS.photos[tk.photo].name||('Photo '+(tk.photo+1))})}
+    }else if(tb.kind==='desc'){
+      if(!first&&tb.text&&String(tb.text).trim())det.push({h,b:tb.text});
+    }
+  });
+  return{det,agree,hasPhotos};
+}
+function cAgreeBlocks(){
+  const out=[];
+  CS.tasks.forEach(tk=>{cEnsureTabs(tk);cTaskDet(tk).agree.forEach(a=>out.push(a))});
+  return out;
+}
+function cAgreeHtml(){
+  return cAgreeBlocks().map(a=>`<div class="qgrp"><div class="qgh"><span>${esc(a.h.toUpperCase())}</span><b></b></div><p class="qterms">${esc(a.b)}</p></div>`).join('');
+}
+function cAgreeDocHtml(){
+  return cAgreeBlocks().map(a=>`<h2>${esc(a.h)}</h2><p>${esc(a.b)}</p>`).join('');
+}
+function cMeasRows(base){
+  const arr=cGetP(base)||[];
+  return arr.map((m,mi)=>{
+    const mp=`${base}.${mi}`;
+    return `<div class="xrow gx" data-dragpath="${base}" data-dragidx="${mi}">${cGripBtn()}<div class="row">
+      ${cFld(t('c.task.mLabel'),cTxtIn(mp+'.label'))}
+      ${cFld(t('c.task.mQty'),cNumIn(mp+'.qty'))}
+      ${cFld(t('c.task.mUnit'),`<select class="in" data-ck="${mp}.unit">${C_CUSTOM_UNITS.map(u=>`<option value="${u}">${esc(cUnitName(u))}</option>`).join('')}</select>`)}
+      ${cFld(t('c.meas.note'),cTxtIn(mp+'.note'))}
+      <div class="f"><span>&nbsp;</span><button class="rm" type="button" data-crm="${mp}" aria-label="${esc(t('c.task.mRm'))}">×</button></div>
+    </div></div>`;
+  }).join('');
+}
+function cTabPicker(i){
+  return `<div class="extras"><h4>${t('c.tab.pick')}</h4><p class="hint">${t('c.tab.pickHint')}</p>${C_TAB_KINDS.map(k=>`<div class="xrow"><div class="xhead"><b>${esc(t('c.tabk.'+k))}</b><button class="btn small" type="button" data-cact="addTabKind" data-i="${i}" data-kind="${k}" style="margin-left:auto" aria-label="${esc(t('c.tab.add'))}">＋</button></div><p class="hint" style="margin:0">${esc(t('c.tabk.'+k+'D'))}</p></div>`).join('')}</div>`;
+}
+function cTabBody(tk,i,j,photoOpts){
+  const tb=tk.tabs[j], p=`tasks.${i}`, tp=`${p}.tabs.${j}`;
+  const first=cTabFirstIdx(tk,tb.kind)===j;
+  let inner=`<div class="row">${cFld(t('c.tab.titlePh'),`<input class="in" type="text" data-ck="${tp}.title" placeholder="${esc(t('c.tabk.'+tb.kind))}">`)}</div>`;
+  if(tb.kind==='desc'){
+    inner+=cFld(t('c.tabk.desc'),`<textarea class="in grow" data-ck="${first?p+'.desc':tp+'.text'}" placeholder="${esc(t('c.tab.textPh'))}"></textarea>`);
+  }else if(tb.kind==='notes'){
+    inner+=cFld(t('c.tabk.notes'),`<textarea class="in grow" data-ck="${first?p+'.notes':tp+'.text'}" placeholder="${esc(t('c.task.notesPh'))}"></textarea>`);
+  }else if(tb.kind==='meas'){
+    const base=first?`${p}.meas`:`${tp}.rows`;
+    inner+=cMeasRows(base)+`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn small" type="button" data-cact="${first?'addTaskMeas':'addTabMeas'}" data-i="${i}" data-j="${j}">${t('c.task.measAdd')}</button><button class="btn small" type="button" data-cact="${first?'taskMeasToQty':'tabMeasToQty'}" data-i="${i}" data-j="${j}">${t('c.task.useQty')}</button></div>`;
+  }else if(tb.kind==='mats'){
+    inner+=(tb.rows||[]).map((r,rw)=>{
+      const rp=`${tp}.rows.${rw}`;
+      return `<div class="xrow gx" data-dragpath="${tp}.rows" data-dragidx="${rw}">${cGripBtn()}<div class="row">
+        ${cFld(t('mat.name'),cTxtIn(rp+'.name'))}
+        ${cFld(t('mat.qty'),cNumIn(rp+'.qty'))}
+        ${cFld(t('mat.cpu'),cNumIn(rp+'.cost'))}
+        <div class="f"><span>${t('mat.total')}</span>${cOut('c:tabm.'+i+'.'+j+'.'+rw)}</div>
+        <div class="f"><span>&nbsp;</span><button class="rm" type="button" data-crm="${rp}" aria-label="${esc(t('mat.rm'))}">×</button></div>
+      </div></div>`;
+    }).join('')+`<button class="btn small" type="button" data-cact="addTabRow" data-i="${i}" data-j="${j}">${t('c.tabm.add')}</button>`;
+  }else if(tb.kind==='sched'){
+    inner+=`<div class="row">${cFld(t('c.tabs.freq'),`<select class="in" data-ck="${tp}.freq">${['once','weekly','biweekly','monthly','custom'].map(f=>`<option value="${f}">${esc(t('c.freq.'+f))}</option>`).join('')}</select>`)}</div>`
+      +cFld(t('c.tabk.sched'),`<textarea class="in grow" data-ck="${tp}.text" placeholder="${esc(t('c.tabs.notesPh'))}"></textarea>`);
+  }else if(tb.kind==='check'){
+    inner+=(tb.rows||[]).map((r,rw)=>{
+      const rp=`${tp}.rows.${rw}`;
+      return `<div class="xrow gx" data-dragpath="${tp}.rows" data-dragidx="${rw}">${cGripBtn()}<div class="row">
+        ${cFld(t('c.tabc.done'),`<input type="checkbox" data-ck="${rp}.done" style="width:22px;height:22px">`)}
+        ${cFld(t('c.tabc.item'),cTxtIn(rp+'.text',t('c.tabc.itemPh')))}
+        <div class="f"><span>&nbsp;</span><button class="rm" type="button" data-crm="${rp}" aria-label="×">×</button></div>
+      </div></div>`;
+    }).join('')+`<button class="btn small" type="button" data-cact="addTabRow" data-i="${i}" data-j="${j}">${t('c.tabc.add')}</button>`;
+  }else if(tb.kind==='opts'){
+    inner+=(tb.rows||[]).map((r,rw)=>{
+      const rp=`${tp}.rows.${rw}`;
+      return `<div class="xrow gx" data-dragpath="${tp}.rows" data-dragidx="${rw}">${cGripBtn()}<div class="row">
+        ${cFld(t('c.tabo.name'),cTxtIn(rp+'.name'))}
+        ${cFld(t('c.tabo.price'),cNumIn(rp+'.price'))}
+        ${cFld(t('c.tabo.inc'),`<input type="checkbox" data-ck="${rp}.inc" style="width:22px;height:22px">`)}
+        <div class="f"><span>&nbsp;</span><button class="rm" type="button" data-crm="${rp}" aria-label="${esc(t('c.tabo.rm'))}">×</button></div>
+      </div></div>`;
+    }).join('')+`<button class="btn small" type="button" data-cact="addTabRow" data-i="${i}" data-j="${j}">${t('c.tabo.add')}</button>`;
+  }else if(tb.kind==='photos'){
+    const cur=tk.photo>=0&&CS.photos[tk.photo]?CS.photos[tk.photo]:null;
+    inner+=`<div class="row">${cFld(t('c.task.photo'),`<select class="in" data-ck="${p}.photo">${photoOpts}</select>`)}</div>`
+      +(cur?`<img class="cthumb" src="${cur.dataUrl}" alt="">`:'');
+  }
+  return `<div class="tbody">${inner}</div>`;
+}
+function cTplChips(tpl){
+  const kinds=[];let agree=false;
+  (tpl.tasks||[]).forEach(tk=>{cEnsureTabs(tk);tk.tabs.forEach(tb=>{if(kinds.indexOf(tb.kind)<0)kinds.push(tb.kind)});if(cTaskHasAgree(tk))agree=true});
+  return kinds.map(k=>`<span class="tchip">${esc(t('c.tabk.'+k))}</span>`).join('')+(agree?`<span class="tchip agree">${esc(t('c.tab.agree'))}</span>`:'');
+}
+function cSecTemplates(){
+  const list=cTpls();
+  const rows=list.map((tpl,ti)=>`<div class="item"><div class="ih"><b>${esc(tpl.name||('Template '+(ti+1)))}</b><button class="rm" type="button" data-cact="delTpl" data-i="${ti}" aria-label="${esc(t('c.tpl.del'))}">×</button></div>
+    <p class="hint">${t('c.tpl.usedPre')} ${tpl.uses||0} ${t('c.tpl.usedPost')} · ${(tpl.tasks||[]).length} ${t('c.tpl.tasks')}</p>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">${cTplChips(tpl)}</div>
+    <button class="btn small" type="button" data-cact="useTpl" data-i="${ti}">${t('c.tpl.use')}</button></div>`).join('');
+  const cur=CS.jobTpl?list.find(x=>String(x.id)===String(CS.jobTpl)):null;
+  return `<div class="extras"><h4>${t('c.tpl.title')}</h4>
+    <p class="hint">${t('c.tpl.hint')}</p>
+    ${rows||`<p class="hint">${t('c.tpl.empty')}</p>`}
+    ${cur?`<p class="hint">${t('c.tpl.from')} <b>${esc(cur.name)}</b></p><button class="btn small" type="button" data-cact="updateTpl">${t('c.tpl.update')}</button>`:''}
+    <div class="row" style="margin-top:10px">${cFld(t('c.tpl.name'),`<input class="in" id="cTplName" placeholder="${esc(t('c.tpl.namePh'))}">`)}
+    <div class="f"><span>&nbsp;</span><button class="btn small" type="button" data-cact="saveTpl">${t('c.tpl.save')}</button></div></div>
+    <p class="hint" data-cout="c.tplMsg"></p></div>`;
+}
 function cSecTasks(){
   const customOpts=CS.customTaskTypes.map(nm=>`<option value="x:${esc(nm)}">${esc(nm)}</option>`).join('');
   const chips=CS.customTaskTypes.map((nm,i)=>`<span class="tchip">${esc(nm)}<button class="rm" type="button" data-crm="customTaskTypes.${i}" aria-label="×" style="width:22px;height:22px;font-size:13px">×</button></span>`).join('');
   const photoOpts=`<option value="-1">${esc(t('c.task.noPhoto'))}</option>`+CS.photos.map((ph,pi)=>`<option value="${pi}">${esc(ph.name||('Photo '+(pi+1)))}</option>`).join('');
   const rows=CS.tasks.map((tk,i)=>{
+    cEnsureTabs(tk);
     const p=`tasks.${i}`;
-    const measRows=tk.meas.map((m,mi)=>{
-      const mp=`${p}.meas.${mi}`;
-      return `<div class="xrow"><div class="row">
-        ${cFld(t('c.task.mLabel'),cTxtIn(mp+'.label'))}
-        ${cFld(t('c.task.mQty'),cNumIn(mp+'.qty'))}
-        ${cFld(t('c.task.mUnit'),`<select class="in" data-ck="${mp}.unit">${C_CUSTOM_UNITS.map(u=>`<option value="${u}">${esc(cUnitName(u))}</option>`).join('')}</select>`)}
-        ${cFld(t('c.meas.note'),cTxtIn(mp+'.note'))}
-        <div class="f"><span>&nbsp;</span><button class="rm" type="button" data-crm="${mp}" aria-label="${esc(t('c.task.mRm'))}">×</button></div>
-      </div></div>`;
-    }).join('');
     const modeFields=tk.mode==='hourly'
       ?`<div class="row">${cFld(t('c.task.hours'),cNumIn(p+'.hours'))}<div class="f"><span>${t('c.task.laborRate')}</span><b class="amt">${money(+CS.rates.labor||0)} / ${esc(t('unit.hour'))}</b></div></div>`
       :tk.mode==='flat'
       ?`<div class="row">${cFld(t('c.task.flat'),cNumIn(p+'.flat'))}</div>`
       :`<div class="row">${cFld(t('c.task.qty'),cNumIn(p+'.qty'))}${cFld(t('c.task.rate')+' $',cNumIn(p+'.rate'))}</div>`;
-    return `<div class="item"><div class="ih"><b>${esc(tk.desc||t('c.task.untitled'))} <small>· ${esc(cTaskTypeName(tk.type))}</small></b><button class="rm" type="button" data-crm="${p}" aria-label="${esc(t('c.task.rm'))}">×</button></div>
+    const open=Math.max(0,Math.min(cOpenTab[i]||0,tk.tabs.length-1));
+    const tabChips=tk.tabs.map((tb,j)=>`<span class="ttab${j===open?' on':''}" data-dragpath="tasks.${i}.tabs" data-dragidx="${j}">${cGripBtn()}<button class="tt" type="button" data-cact="openTab" data-i="${i}" data-j="${j}">${esc(tb.title||t('c.tabk.'+tb.kind))}</button><button class="rm" type="button" data-cact="rmTab" data-i="${i}" data-j="${j}" aria-label="${esc(t('c.tab.rm'))}">×</button></span>`).join('');
+    return `<div class="item" data-dragpath="tasks" data-dragidx="${i}"><div class="ih">${cGripBtn()}<span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b>${esc(tk.desc||t('c.task.untitled'))} <small>· ${esc(cTaskTypeName(tk.type))}</small></b>${cTaskHasAgree(tk)?`<span class="tchip agree">${esc(t('c.tab.agree'))}</span>`:''}</span><button class="rm" type="button" data-crm="${p}" aria-label="${esc(t('c.task.rm'))}">×</button></div>
     <div class="row">
       ${cFld(t('c.task.desc'),cTxtIn(p+'.desc',t('c.task.descPh')))}
       ${cFld(t('c.task.type'),`<select class="in" data-ck="${p}.type">${C_TASK_PRESETS.map(k=>`<option value="${k}">${esc(cTaskTypeName(k))}</option>`).join('')}${customOpts}</select>`)}
@@ -876,12 +1062,14 @@ function cSecTasks(){
       <div class="f"><span>${t('c.task.amount')}</span>${cOut('c:task.'+i)}</div>
     </div>
     ${modeFields}
-    <div class="extras"><h4>${t('c.task.meas')}</h4>${measRows}
-    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn small" type="button" data-cact="addTaskMeas" data-i="${i}">${t('c.task.measAdd')}</button><button class="btn small" type="button" data-cact="taskMeasToQty" data-i="${i}">${t('c.task.useQty')}</button></div></div>
-    ${cFld(t('c.task.notes'),cTxtIn(p+'.notes',t('c.task.notesPh')))}
+    <div class="ttabs" data-tablist="${i}">${tabChips}</div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px">${tk.tabs.length<10?`<button class="btn small" type="button" data-cact="tabPicker" data-i="${i}">${t('c.tab.add')}</button>`:`<span class="hint" style="margin:0">${t('c.tab.max')}</span>`}<span class="hint" style="margin:0">${tk.tabs.length} ${t('c.tab.of10')}</span></div>
+    ${cPicker===i?cTabPicker(i):''}
+    ${tk.tabs.length?cTabBody(tk,i,open,photoOpts):''}
     </div>`;
   }).join('');
-  return `<section class="blk"><div class="bh"><h2>${t('c.task.title')}</h2><div style="display:flex;gap:10px;align-items:center"><span class="sum" data-cout="c.tasksTotal"></span><button class="btn small" type="button" data-cact="addTask">${t('c.task.add')}</button></div></div><div class="bb">
+  return `<section class="blk tasksec"><div class="bh"><h2>${t('c.task.title')}</h2><div style="display:flex;gap:10px;align-items:center"><span class="sum" data-cout="c.tasksTotal"></span><button class="btn small" type="button" data-cact="addTask">${t('c.task.add')}</button></div></div><div class="bb">
+    <div class="tstrip">${esc(t('c.tab.strip'))}</div>
     <p class="hint">${t('c.task.hint')}</p>
     ${rows||`<p class="hint">${t('c.task.empty')}</p>`}
     <div class="extras"><h4>${t('c.task.types')}</h4>
@@ -890,8 +1078,10 @@ function cSecTasks(){
       <div class="row">${cFld(t('c.task.newType'),`<input class="in" id="cNewTaskType" placeholder="${esc(t('c.task.newTypePh'))}">`)}
       <div class="f"><span>&nbsp;</span><button class="btn small" type="button" data-cact="addTaskType">${t('c.task.addType')}</button></div></div>
     </div>
+    ${cSecTemplates()}
   </div></section>`;
 }
+
 function cSecMeas(){
   const itemOpts=CS.items.map((it,i)=>`<option value="${i}">${esc((i+1)+' — '+cItemLabel(it))}</option>`).join('');
   const rows=CS.measurements.map((m,i)=>{
@@ -966,9 +1156,12 @@ function cSecProfile(){
       </div></div>
     </div>
     <p class="hint" data-cout="c.profMsg"></p>
+    <p class="hint" data-cout="c.profMeta"></p>
     <h4>${t('c.prof.savedDocs')}</h4>
     <div id="cSavedDocs"></div>
     <div id="cDocView" style="margin-top:12px"></div>
+    <h4>${t('c.trash.title')}</h4>
+    <div id="cTrash"></div>
   </div></section>`;
 }
 function cRender(){
@@ -1035,12 +1228,13 @@ function cGroups(){
     const lr=+CS.rates.labor||0;
     const tlines=CC.tasks.map((e,i)=>{
       const tk=e.task;
+      cEnsureTabs(tk);
       let sub=tk.mode==='hourly'?`${n(tk.hours)} ${t('unit.hour')} × ${money(lr)}`
         :tk.mode==='flat'?t('c.task.modeFlat')
         :`${n(tk.qty)} × ${money(tk.rate)}`;
-      if(tk.meas&&tk.meas.length)sub+=' · '+tk.meas.map(m=>`${m.label||t('c.task.mLabel')}: ${n(m.qty)} ${cUnitName(m.unit)}`).join(', ');
-      if(tk.photo>=0&&CS.photos[tk.photo])sub+=` · ${t('c.task.photo')}: ${CS.photos[tk.photo].name||('Photo '+(tk.photo+1))}`;
-      return{d:(i+1)+'. '+(tk.desc||t('c.task.untitled'))+' ('+cTaskTypeName(tk.type)+')',s:sub,a:e.amt,why:tk.notes};
+      const det=cTaskDet(tk);
+      if(!det.hasPhotos&&tk.photo>=0&&CS.photos[tk.photo])sub+=` · ${t('c.task.photo')}: ${CS.photos[tk.photo].name||('Photo '+(tk.photo+1))}`;
+      return{d:(i+1)+'. '+(tk.desc||t('c.task.untitled'))+' ('+cTaskTypeName(tk.type)+')',s:sub,a:e.amt,det:det.det};
     });
     groups.push({title:t('c.doc.tasks'),lines:tlines,sub:cR2(tlines.reduce((s,l)=>s+l.a,0))});
   }
@@ -1048,7 +1242,7 @@ function cGroups(){
   return groups;
 }
 function cGroupsHtml(groups,withWhy){
-  return groups.map(g=>`<div class="qgrp"><div class="qgh"><span>${esc(g.title)}</span><b>${money(g.sub)}</b></div>${g.lines.map(l=>`<div class="ql${l.x?' x':''}"><span class="d">${esc(l.d)}</span><span class="a">${money(l.a)}</span>${l.s?`<span class="s">${esc(l.s)}</span>`:''}${withWhy&&l.why?`<span class="why">${esc(t('doc.why')+l.why)}</span>`:''}</div>`).join('')}</div>`).join('');
+  return groups.map(g=>`<div class="qgrp"><div class="qgh"><span>${esc(g.title)}</span><b>${money(g.sub)}</b></div>${g.lines.map(l=>`<div class="ql${l.x?' x':''}"><span class="d">${esc(l.d)}</span><span class="a">${money(l.a)}</span>${l.s?`<span class="s">${esc(l.s)}</span>`:''}${withWhy&&l.why?`<span class="why">${esc(t('doc.why')+l.why)}</span>`:''}${l.det?l.det.map(sec=>`<span class="s"><b>${esc(sec.h.toUpperCase())}</b>${sec.b?` — ${esc(sec.b)}`:''}${sec.rows?sec.rows.map(r=>`<br>${esc(r.l)}${r.v?` · ${esc(r.v)}`:''}`).join(''):''}</span>`).join(''):''}</div>`).join('')}</div>`).join('');
 }
 function cDocHead(title,no,dateStr,extraMeta){
   const c=CS.company;
@@ -1082,6 +1276,7 @@ function cRenderEstimate(){
     ${extra}
     <div class="qtotal"><span>${t('c.doc.total')}</span><b>${money(CC.total)}</b></div>
     <p class="qterms">${esc(CS.terms)}</p>
+    ${cAgreeHtml()}
     <div class="qdep"><span>${t('c.doc.deposit')}</span><b>$ __________</b></div>
     <div class="qdep"><span>${t('c.doc.baldue')}</span><b>$ __________</b></div>
     <div class="qsign"><p><b>${t('c.doc.accept')}</b></p>
@@ -1100,7 +1295,8 @@ function cEstimateText(){
     g.lines.forEach(l=>{T.push(`  ${l.d}${l.s?' ('+l.s+')':''}: ${money(l.a)}`);if(l.why)T.push(`      ${t('doc.why')}${l.why}`)});
     T.push('');
   });
-  T.push(`${t('c.doc.total').toUpperCase()}  ${money(CC.total)}`,'',CS.terms,'',
+  const agreeTxt=[];CS.tasks.forEach(tk=>{cEnsureTabs(tk);cTaskDet(tk).agree.forEach(a=>agreeTxt.push(a.h.toUpperCase()+'\n'+a.b))});
+  T.push(`${t('c.doc.total').toUpperCase()}  ${money(CC.total)}`,'',CS.terms,...(agreeTxt.length?['',agreeTxt.join('\n\n')]:[]),'',
     `${t('c.doc.deposit')}: $__________`,`${t('c.doc.baldue')}: $__________`,'',
     t('c.doc.accept'),`${t('c.doc.sign')}: ______________________________  ${t('c.doc.date')}: ____________`,`${t('c.doc.pname')}: ______________________________`);
   return T.join('\n');
@@ -1117,6 +1313,7 @@ function cRenderInvoice(){
     <div class="qgrp"><div class="qgh"><span>${esc(t('doc.ms'))}</span><b>${money(cMS.covered)}</b></div>${ms||`<p class="hint">${t('doc.nomsset')}</p>`}</div>
     <div class="qtotal"><span>${t('c.doc.total')}</span><b>${money(CC.total)}</b></div>
     <p class="qterms">${esc(CS.terms)}</p>
+    ${cAgreeHtml()}
   </article>`;
 }
 function cRenderReceipt(){
@@ -1136,11 +1333,17 @@ function cRenderReceipt(){
   </article>`;
 }
 function cSaveDoc(kind,html,total,no){
-  CS.savedDocs.push({kind,no,date:Date.now(),total,html});
+  const prev=CS.savedDocs.filter(d=>d.kind===kind&&d.no===no).pop();
+  CS.savedDocs.push({kind,no,date:Date.now(),total,html,version:(prev?(+prev.version||1)+1:1),updatedAt:Date.now(),updatedBy:cUpdatedBy()});
   if(CS.savedDocs.length>30)CS.savedDocs=CS.savedDocs.slice(-30);
 }
 function cProfiles(){try{return JSON.parse(localStorage.getItem(CPROF)||'{}')}catch(e){return{}}}
 function cPutProfiles(p){try{localStorage.setItem(CPROF,JSON.stringify(p));return true}catch(e){return false}}
+function cUpdatedBy(){try{const os=JSON.parse(localStorage.getItem('bqt_office_session')||'null');if(os&&os.email)return 'Office session'}catch(e){}const c=window.BQTCloud;if(c&&c.user()&&c.user().email)return c.user().email;try{return localStorage.getItem('bqt_email')||'This device'}catch(e){return 'This device'}}
+const CTRASH='carpentry-trash-v1';
+function cTrash(){try{const a=JSON.parse(localStorage.getItem(CTRASH)||'[]');return Array.isArray(a)?a:[]}catch(e){return[]}}
+function cPutTrash(a){try{localStorage.setItem(CTRASH,JSON.stringify(a.slice(-30)));return true}catch(e){return false}}
+function cTrashAdd(e){const a=cTrash();a.push(e);return cPutTrash(a)}
 
 /* ---------- carpentry update ---------- */
 function cUpdate(){
@@ -1158,8 +1361,12 @@ function cUpdate(){
   O['c.tasksTotal']=money(CC.tasksTotal);
   O['c.photoCount']=CS.photos.length+' / 10';
   O['c.profMsg']=CS._profMsg||'';
+  const _pmn=(CS.profileName||'').trim(),_pm=_pmn?cProfiles()[_pmn]:null;
+  O['c.profMeta']=_pm?('v'+(+_pm.version||1)+' \u00b7 '+t('c.prof.updated')+' '+new Date(_pm.updatedAt||_pm.savedAt||Date.now()).toLocaleDateString(LOC())+' \u00b7 '+t('c.prof.by')+' '+(_pm.updatedBy||'This device')):'';
   CC.items.forEach((e,i)=>{O['c:item.'+i]=money(e.amt)});
   CC.tasks.forEach((e,i)=>{O['c:task.'+i]=money(e.amt)});
+  CS.tasks.forEach((tk,i)=>{(tk.tabs||[]).forEach((tb,j)=>{if(tb.kind==='mats')(tb.rows||[]).forEach((r,rw)=>{O['c:tabm.'+i+'.'+j+'.'+rw]=money(cR2(cNum(r.qty)*cNum(r.cost)))})})});
+  O['c.tplMsg']=CS._tplMsg||'';
   CS.materials.forEach((m,i)=>{O['c:mat.'+i]=money(CC.mats[i])});
 
   document.querySelectorAll('[data-ck]').forEach(el=>{
@@ -1191,26 +1398,40 @@ function cUpdate(){
   if(sd){
     const kindName={est:t('c.doc.estimate'),inv:t('c.doc.invoice'),rec:t('c.doc.receipt')};
     sd.innerHTML=CS.savedDocs.length?CS.savedDocs.map((d,i)=>`<div class="xrow"><div class="row" style="align-items:center">
-      <div class="f"><span>${esc(kindName[d.kind]||d.kind)} · ${esc(d.no)}</span><b>${esc(new Date(d.date).toLocaleDateString(LOC()))} — ${money(d.total)}</b></div>
+      <div class="f"><span>${esc(kindName[d.kind]||d.kind)} · ${esc(d.no)}</span><b>${esc(new Date(d.date).toLocaleDateString(LOC()))} — ${money(d.total)}</b><br><span class="hint">v${d.version||1} · ${t('c.prof.updated')} ${esc(new Date(d.updatedAt||d.date).toLocaleDateString(LOC()))} · ${t('c.prof.by')} ${esc(d.updatedBy||'This device')}</span></div>
       <div class="f"><span>&nbsp;</span><div style="display:flex;gap:8px">
         <button class="btn small" type="button" data-cact="viewDoc" data-i="${i}">${t('c.prof.view')}</button>
         <button class="btn small" type="button" data-cact="printSaved" data-i="${i}">${t('c.prof.print')}</button>
+        <button class="btn small" type="button" data-cact="trashDoc" data-i="${i}">${t('c.prof.del')}</button>
       </div></div>
     </div></div>`).join(''):`<p class="hint">${t('c.prof.empty')}</p>`;
+  }
+  const trEl=document.getElementById('cTrash');
+  if(trEl){
+    const kindNameT={est:t('c.doc.estimate'),inv:t('c.doc.invoice'),rec:t('c.doc.receipt')};
+    const tItems=cTrash();
+    trEl.innerHTML=tItems.length?tItems.map((e,i)=>`<div class="xrow"><div class="row" style="align-items:center">
+      <div class="f"><span>${esc(e.type==='profile'?t('c.trash.job'):t('c.trash.doc'))} · ${esc(e.type==='profile'?e.name:((kindNameT[e.data&&e.data.kind]||'')+' '+(e.data?e.data.no:'')))}</span><b>${esc(new Date(e.deletedAt).toLocaleDateString(LOC()))} · ${esc(e.deletedBy||'This device')}</b></div>
+      <div class="f"><span>&nbsp;</span><div style="display:flex;gap:8px">
+        <button class="btn small" type="button" data-cact="trashRestore" data-i="${i}">${t('c.trash.restore')}</button>
+        <button class="btn small" type="button" data-cact="trashForever" data-i="${i}">${t('c.trash.forever')}</button>
+      </div></div>
+    </div></div>`).join(''):`<p class="hint">${t('c.trash.empty')}</p>`;
   }
   cSave();
   cRenderPay();
   cCompanyUI();
+  cGrowTabs();
 }
 /* ---------- carpentry share + document editing ---------- */
 function cStripSvg(html){return html.replace(/<svg[\s\S]*?<\/svg>/g,'')}
 function cDocOutHtml(kind){
   if(kind==='est'){
-    const html=CS.estEdit?cStripSvg(CS.estEdit):docHtml(t('c.doc.estimate'),CS._estNo||'',new Date(CS.qdate||Date.now()).toLocaleDateString(LOC()),`${esc(CS.company.name||'')}<br>${t('c.doc.prep')}: ${esc(CS.client.name||'')}`,cGroups(),`<h2>${t('c.doc.total').toUpperCase()} — ${money(CC.total)}</h2><p>${esc(CS.terms)}</p><p>${t('c.doc.deposit')}: $__________<br>${t('c.doc.baldue')}: $__________</p><p><b>${t('c.doc.accept')}</b></p><p>${t('c.doc.sign')}: ______________________________&nbsp;&nbsp;${t('c.doc.date')}: ____________<br>${t('c.doc.pname')}: ______________________________</p>`);
+    const html=CS.estEdit?cStripSvg(CS.estEdit):docHtml(t('c.doc.estimate'),CS._estNo||'',new Date(CS.qdate||Date.now()).toLocaleDateString(LOC()),`${esc(CS.company.name||'')}<br>${t('c.doc.prep')}: ${esc(CS.client.name||'')}`,cGroups(),`<h2>${t('c.doc.total').toUpperCase()} — ${money(CC.total)}</h2><p>${esc(CS.terms)}</p>${cAgreeDocHtml()}<p>${t('c.doc.deposit')}: $__________<br>${t('c.doc.baldue')}: $__________</p><p><b>${t('c.doc.accept')}</b></p><p>${t('c.doc.sign')}: ______________________________&nbsp;&nbsp;${t('c.doc.date')}: ____________<br>${t('c.doc.pname')}: ______________________________</p>`);
     return{name:'estimate-'+(CS._estNo||'estimate')+'.docx',html:html,label:t('c.doc.estimate'),total:CC.total};
   }
   if(kind==='inv'){
-    const html=docHtml(t('c.doc.invoice'),CS._invNo||'',new Date(CS.inDate||Date.now()).toLocaleDateString(LOC()),`${esc(CS.company.name||'')}<br>${t('c.doc.prep')}: ${esc(CS.client.name||'')}`,cGroups(),`<h2>${t('doc.ms')}</h2><table border="1" cellpadding="6" cellspacing="0">${cMS.rows.map((r,i)=>`<tr><td>${t('doc.mstone')} ${i+1}: ${esc(r.m.name)}${r.m.due?` — ${esc(r.m.due)}`:''}</td><td align="right">${money(r.amt)}</td></tr>`).join('')}</table><h2>${t('c.doc.total').toUpperCase()} — ${money(CC.total)}</h2><p>${esc(CS.terms)}</p>`);
+    const html=docHtml(t('c.doc.invoice'),CS._invNo||'',new Date(CS.inDate||Date.now()).toLocaleDateString(LOC()),`${esc(CS.company.name||'')}<br>${t('c.doc.prep')}: ${esc(CS.client.name||'')}`,cGroups(),`<h2>${t('doc.ms')}</h2><table border="1" cellpadding="6" cellspacing="0">${cMS.rows.map((r,i)=>`<tr><td>${t('doc.mstone')} ${i+1}: ${esc(r.m.name)}${r.m.due?` — ${esc(r.m.due)}`:''}</td><td align="right">${money(r.amt)}</td></tr>`).join('')}</table><h2>${t('c.doc.total').toUpperCase()} — ${money(CC.total)}</h2><p>${esc(CS.terms)}</p>${cAgreeDocHtml()}`);
     return{name:'invoice-'+(CS._invNo||'invoice')+'.docx',html:html,label:t('c.doc.invoice'),total:CC.total};
   }
   const r=cReceiptCalc(CC.total,CS.payments);
@@ -1272,6 +1493,98 @@ function cExitEdit(kind){
   cSave();cUpdate();
 }
 
+/* ---------- drag to organize — task area only (Nov 17, 2026 ruling) ----------
+   Grip dots drag: tasks up/down, tabs left/right within their row or into
+   another task, lines up/down within a tab. Direction follows the list —
+   no free placement, no overlapping, no user resizing (task text areas
+   auto-grow instead: see cGrowTabs). Order is written back into CS and
+   saved through the normal cRender/cUpdate/cSave path, so documents
+   print in the new order. Grips are buttons: arrow keys move the item. */
+const cGripBtn=()=>`<button class="grip" type="button" data-grip aria-label="${esc(t('c.drag'))}" title="${esc(t('c.drag'))}">⠿</button>`;
+function cDragArr(path){const a=cGetP(path);return Array.isArray(a)?a:null}
+function cDragSibs(el){const p=el.parentElement;if(!p)return[el];return Array.prototype.filter.call(p.children,c=>c.dataset&&c.dataset.dragpath===el.dataset.dragpath)}
+function cDragPermute(path,order){const arr=cDragArr(path);if(!arr)return;const cp=order.map(i=>arr[i]);for(let k=0;k<cp.length;k++)arr[k]=cp[k]}
+let CDG=null;
+document.addEventListener('pointerdown',e=>{
+  const g=e.target&&e.target.closest?e.target.closest('[data-grip]'):null;if(!g)return;
+  const el=g.closest('[data-dragidx]');if(!el||!el.dataset.dragpath)return;
+  e.preventDefault();
+  CDG={el:el,path:el.dataset.dragpath,idx:+el.dataset.dragidx,x:e.clientX||0,y:e.clientY||0,on:false,tabs:/^tasks\.\d+\.tabs$/.test(el.dataset.dragpath)};
+});
+document.addEventListener('pointermove',e=>{
+  if(!CDG)return;
+  if(!CDG.on){if(Math.hypot((e.clientX||0)-CDG.x,(e.clientY||0)-CDG.y)<6)return;CDG.on=true;CDG.el.classList.add('dragel');document.body.classList.add('dragging-on')}
+  if(CDG.tabs)cDragTabMove(e);else cDragListMove(e);
+});
+function cDragListMove(e){
+  const el=CDG.el,sibs=cDragSibs(el);if(sibs.length<2)return;
+  const y=e.clientY||0;let before=null;
+  for(let k=0;k<sibs.length;k++){const s=sibs[k];if(s===el)continue;const r=s.getBoundingClientRect();if(y<r.top+r.height/2){before=s;break}}
+  if(before){if(el.nextElementSibling!==before)el.parentElement.insertBefore(el,before)}
+  else{const last=sibs[sibs.length-1];if(last!==el)el.parentElement.insertBefore(el,last.nextElementSibling)}
+}
+function cDragTabMove(e){
+  const el=CDG.el;let cont=el.parentElement;
+  let under=null;try{under=document.elementFromPoint?document.elementFromPoint(e.clientX||0,e.clientY||0):null}catch(err){}
+  if(under&&under.closest){let c=under.closest('[data-tablist]');if(!c){const it=under.closest('.item');if(it)c=it.querySelector('[data-tablist]')}if(c)cont=c}
+  const dstTi=+cont.dataset.tablist,srcTi=+CDG.path.split('.')[1];
+  if(dstTi!==srcTi){const tk=CS.tasks[dstTi];if(!tk||(tk.tabs||[]).length>=10)cont=el.parentElement}
+  if(cont!==el.parentElement)cont.appendChild(el);
+  const x=e.clientX||0;let before=null;
+  const chips=Array.prototype.filter.call(cont.children,c=>c.dataset&&c.dataset.dragpath);
+  for(let k=0;k<chips.length;k++){const s=chips[k];if(s===el)continue;const r=s.getBoundingClientRect();if(x<r.left+r.width/2){before=s;break}}
+  if(before)cont.insertBefore(el,before);else cont.appendChild(el);
+}
+function cDragTabCommit(D){
+  const srcTi=+D.path.split('.')[1];
+  const cont=D.el.parentElement,dstTi=+cont.dataset.tablist;
+  const srcTk=CS.tasks[srcTi];if(!srcTk)return;
+  if(dstTi===srcTi){
+    const openObj=srcTk.tabs[cOpenTab[srcTi]||0];
+    const order=Array.prototype.map.call(cont.children,c=>+c.dataset.dragidx);
+    cDragPermute(D.path,order);
+    const oi=srcTk.tabs.indexOf(openObj);if(oi>=0)cOpenTab[srcTi]=oi;
+    return;
+  }
+  const dstTk=CS.tasks[dstTi];if(!dstTk)return;
+  const moved=srcTk.tabs[D.idx];if(!moved)return;
+  const srcOpenObj=srcTk.tabs[cOpenTab[srcTi]||0];
+  const newDst=Array.prototype.map.call(cont.children,c=>c===D.el?moved:dstTk.tabs[+c.dataset.dragidx]);
+  srcTk.tabs=srcTk.tabs.filter((_,k)=>k!==D.idx);
+  dstTk.tabs=newDst;
+  cOpenTab[dstTi]=newDst.indexOf(moved);
+  const oi=srcTk.tabs.indexOf(srcOpenObj);cOpenTab[srcTi]=oi>=0?oi:Math.max(0,srcTk.tabs.length-1);
+  if(cPicker===srcTi||cPicker===dstTi)cPicker=-1;
+}
+function cDragFinish(commit){
+  if(!CDG)return;const D=CDG;CDG=null;document.body.classList.remove('dragging-on');
+  if(!D.on)return;
+  if(commit){
+    if(D.tabs)cDragTabCommit(D);
+    else cDragPermute(D.path,cDragSibs(D.el).map(s=>+s.dataset.dragidx));
+  }
+  cRender();cUpdate();
+}
+document.addEventListener('pointerup',()=>cDragFinish(true));
+document.addEventListener('pointercancel',()=>cDragFinish(false));
+document.addEventListener('keydown',e=>{
+  const g=e.target&&e.target.closest?e.target.closest('[data-grip]'):null;if(!g)return;
+  const el=g.closest('[data-dragidx]');if(!el||!el.dataset.dragpath)return;
+  const path=el.dataset.dragpath,idx=+el.dataset.dragidx,isTabs=/^tasks\.\d+\.tabs$/.test(path);
+  const fwd=isTabs?e.key==='ArrowRight':e.key==='ArrowDown';
+  const back=isTabs?e.key==='ArrowLeft':e.key==='ArrowUp';
+  if(!fwd&&!back)return;
+  e.preventDefault();
+  const arr=cDragArr(path);if(!arr)return;
+  const ni=idx+(fwd?1:-1);if(ni<0||ni>=arr.length)return;
+  const tmp=arr[idx];arr[idx]=arr[ni];arr[ni]=tmp;
+  if(isTabs){const ti=+path.split('.')[1],o=cOpenTab[ti]||0;if(o===idx)cOpenTab[ti]=ni;else if(o===ni)cOpenTab[ti]=idx}
+  cRender();cUpdate();
+  const nel=document.querySelector('[data-dragpath="'+path+'"][data-dragidx="'+ni+'"]');
+  const ng=nel?nel.querySelector('[data-grip]'):null;if(ng)ng.focus();
+});
+function cGrowTabs(){document.querySelectorAll('.tasksec textarea.grow').forEach(ta=>{ta.style.height='auto';const sh=ta.scrollHeight;if(sh>0)ta.style.height=sh+'px'})}
+
 /* ---------- carpentry events ---------- */
 function cSetFromEl(el,k){
   let v;
@@ -1332,6 +1645,17 @@ const CACT={
   addCustomRate(){CS.customRates.push({name:'',unit:'ln ft',rate:0});cRender();cUpdate()},
   addItem(){CS.items.push(cMkItem('trim'));cRender();cUpdate()},
   addTask(){CS.tasks.push(cMkTask());cRender();cUpdate()},
+  openTab(b){cOpenTab[+b.dataset.i]=+b.dataset.j;cPicker=-1;cRender();cUpdate()},
+  tabPicker(b){const i=+b.dataset.i;cPicker=cPicker===i?-1:i;cRender();cUpdate()},
+  addTabKind(b){const tk=CS.tasks[+b.dataset.i];if(!tk)return;cEnsureTabs(tk);if(tk.tabs.length>=10)return;tk.tabs.push(cMkTab(b.dataset.kind));cOpenTab[+b.dataset.i]=tk.tabs.length-1;cPicker=-1;cRender();cUpdate()},
+  rmTab(b){const tk=CS.tasks[+b.dataset.i];if(!tk)return;cEnsureTabs(tk);tk.tabs.splice(+b.dataset.j,1);const o=cOpenTab[+b.dataset.i]||0;if(o>=tk.tabs.length)cOpenTab[+b.dataset.i]=Math.max(0,tk.tabs.length-1);cRender();cUpdate()},
+  addTabMeas(b){const tk=CS.tasks[+b.dataset.i];const tb=tk&&tk.tabs[+b.dataset.j];if(tb){tb.rows.push(cMkTMeas());cRender();cUpdate()}},
+  tabMeasToQty(b){const tk=CS.tasks[+b.dataset.i];const tb=tk&&tk.tabs[+b.dataset.j];if(tb){tk.qty=cR2((tb.rows||[]).reduce((sm,m)=>sm+cNum(m.qty),0));cRender();cUpdate()}},
+  addTabRow(b){const tk=CS.tasks[+b.dataset.i];const tb=tk&&tk.tabs[+b.dataset.j];if(!tb)return;if(tb.kind==='mats')tb.rows.push({name:'',qty:1,cost:0});else if(tb.kind==='check')tb.rows.push({text:'',done:false});else if(tb.kind==='opts')tb.rows.push({name:'',price:0,inc:true});else return;cRender();cUpdate()},
+  saveTpl(){if(!CS.tasks.length){CS._tplMsg=t('c.tpl.needTasks');cUpdate();return}const el=document.getElementById('cTplName');const nm=el?el.value.trim():'';const list=cTpls();CS.tasks.forEach(cEnsureTabs);list.push({id:Date.now(),name:nm||('Template '+(list.length+1)),uses:0,tasks:JSON.parse(JSON.stringify(CS.tasks))});CS._tplMsg=cPutTpls(list)?t('c.tpl.saved'):t('c.photos.quota');cRender();cUpdate()},
+  useTpl(b){const list=cTpls();const tpl=list[+b.dataset.i];if(!tpl)return;const copies=JSON.parse(JSON.stringify(tpl.tasks||[]));copies.forEach(cEnsureTabs);copies.forEach(cp=>CS.tasks.push(cp));tpl.uses=(tpl.uses||0)+1;cPutTpls(list);CS.jobTpl=tpl.id;cRender();cUpdate()},
+  delTpl(b){const list=cTpls();const tpl=list[+b.dataset.i];if(!tpl)return;list.splice(+b.dataset.i,1);cPutTpls(list);if(String(CS.jobTpl)===String(tpl.id))CS.jobTpl='';cRender();cUpdate()},
+  updateTpl(){const list=cTpls();const tpl=list.find(x=>String(x.id)===String(CS.jobTpl));if(!tpl)return;CS.tasks.forEach(cEnsureTabs);tpl.tasks=JSON.parse(JSON.stringify(CS.tasks));cPutTpls(list);CS._tplMsg=t('c.tpl.updated');cRender();cUpdate()},
   addTaskMeas(b){const tk=CS.tasks[+b.dataset.i];if(tk){tk.meas.push(cMkTMeas());cRender();cUpdate()}},
   taskMeasToQty(b){const tk=CS.tasks[+b.dataset.i];if(tk){tk.qty=cTaskMeasSum(tk);cUpdate()}},
   addTaskType(){const el=document.getElementById('cNewTaskType');const nm=el?el.value.trim():'';if(nm&&CS.customTaskTypes.indexOf(nm)<0)CS.customTaskTypes.push(nm);cRender();cUpdate()},
@@ -1410,7 +1734,13 @@ const CACT={
     const name=(CS.profileName||'').trim();
     if(!name){CS._profMsg=t('c.prof.noname');cUpdate();return}
     const p=cProfiles();
-    p[name]={savedAt:Date.now(),rates:CS.rates,customRates:CS.customRates,items:CS.items,tasks:CS.tasks,customTaskTypes:CS.customTaskTypes,materials:CS.materials,terms:CS.terms,savedDocs:CS.savedDocs};
+    const ex=p[name];
+    if(ex){
+      const msg=t('c.prof.overwrite')+' "'+name+'" ('+t('c.prof.version')+' '+(+ex.version||1)+' \u00b7 '+t('c.prof.updated')+' '+new Date(ex.updatedAt||ex.savedAt||Date.now()).toLocaleDateString(LOC())+'). '+t('c.prof.overwrite2');
+      let ok=false;try{ok=!!window.confirm(msg)}catch(e){ok=false}
+      if(!ok){CS._profMsg=t('c.prof.kept');cUpdate();return}
+    }
+    p[name]={savedAt:ex&&ex.savedAt?ex.savedAt:Date.now(),version:(ex?(+ex.version||1)+1:1),updatedAt:Date.now(),updatedBy:cUpdatedBy(),rates:CS.rates,customRates:CS.customRates,items:CS.items,tasks:CS.tasks,customTaskTypes:CS.customTaskTypes,materials:CS.materials,terms:CS.terms,savedDocs:CS.savedDocs};
     if(cPutProfiles(p)){CS._profMsg=t('c.prof.saved')}else{CS._profMsg=t('c.photos.quota')}
     cUpdate();
   },
@@ -1419,14 +1749,39 @@ const CACT={
     const p=cProfiles()[name];
     if(!p){CS._profMsg=t('c.prof.noname');cUpdate();return}
     ['rates','customRates','items','tasks','customTaskTypes','materials','terms','savedDocs'].forEach(k=>{if(p[k]!==undefined)CS[k]=p[k]});
+    CS.tasks.forEach(cEnsureTabs);CS.jobTpl='';
     CS._profMsg=t('c.prof.loaded');
     cMsCount=-1;cRender();cUpdate();
   },
   delProfile(){
     const name=(CS.profileName||'').trim();
     const p=cProfiles();
-    if(p[name]){delete p[name];cPutProfiles(p);CS._profMsg=t('c.prof.deleted')}else{CS._profMsg=t('c.prof.noname')}
+    if(p[name]){cTrashAdd({type:'profile',name:name,data:p[name],deletedAt:Date.now(),deletedBy:cUpdatedBy()});delete p[name];cPutProfiles(p);CS._profMsg=t('c.prof.trashed')}else{CS._profMsg=t('c.prof.noname')}
     cUpdate();
+  },
+  trashDoc(b){
+    const d=CS.savedDocs[+b.dataset.i];if(!d)return;
+    CS.savedDocs.splice(+b.dataset.i,1);
+    cTrashAdd({type:'doc',data:d,deletedAt:Date.now(),deletedBy:cUpdatedBy()});
+    cSave();cUpdate();
+  },
+  trashRestore(b){
+    const items=cTrash();const e=items[+b.dataset.i];if(!e)return;
+    if(e.type==='profile'){
+      const p=cProfiles();
+      if(p[e.name]){let ok=false;try{ok=!!window.confirm(t('c.prof.overwrite')+' "'+e.name+'". '+t('c.prof.overwrite2'))}catch(err){ok=false}if(!ok)return}
+      p[e.name]=e.data;cPutProfiles(p);
+    }else if(e.type==='doc'&&e.data){
+      CS.savedDocs.push(e.data);if(CS.savedDocs.length>30)CS.savedDocs=CS.savedDocs.slice(-30);
+    }
+    items.splice(+b.dataset.i,1);cPutTrash(items);
+    CS._profMsg=t('c.trash.restored');cSave();cUpdate();
+  },
+  trashForever(b){
+    if(!b.dataset.armed){b.dataset.armed='1';b.textContent=t('c.trash.confirm');setTimeout(()=>{if(b.dataset.armed){delete b.dataset.armed;b.textContent=t('c.trash.forever')}},8000);return}
+    delete b.dataset.armed;
+    const items=cTrash();items.splice(+b.dataset.i,1);cPutTrash(items);
+    CS._profMsg=t('c.trash.gone');cUpdate();
   }
 };
 function cRenderPay(){
@@ -1503,12 +1858,12 @@ if(_logoFile)_logoFile.addEventListener('change',e=>{
 cLoad();cRender();cApplyI18n();cUpdate();
 })();
 </script>
-<!-- BestQuoteTool gate v7: signup first, 5 free tests = generated estimates, downloads for subscribers (client-side, device-local) -->
+<!-- BestQuoteTool gate v8: real email + verification-code accounts (Supabase) when js/bqt-config.js is filled in; until then — and whenever the account service is unreachable — the v7 on-device gate below runs unchanged as the fallback. Signup first, 5 free tests = generated estimates, downloads for subscribers. -->
 <style>
 .bqt-pill{position:fixed;left:10px;bottom:10px;z-index:9998;background:#1d1a14;color:#f6f1e6;font:13px/1.35 system-ui,sans-serif;padding:8px 12px;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,.35);max-width:92vw}
 .bqt-pill a{color:#ffc44d;font-weight:600;text-decoration:none;margin-left:8px}
 .bqt-overlay{position:fixed;inset:0;z-index:9999;background:rgba(20,17,10,.62);display:flex;align-items:center;justify-content:center;padding:18px}
-.bqt-card{background:#f6f1e6;color:#1d1a14;max-width:420px;width:100%;border-radius:12px;padding:24px 22px;font-family:system-ui,sans-serif;box-shadow:0 12px 40px rgba(0,0,0,.4)}
+.bqt-card{background:#f6f1e6;color:#1d1a14;max-width:420px;width:100%;border-radius:12px;padding:24px 22px;font-family:system-ui,sans-serif;box-shadow:0 12px 40px rgba(0,0,0,.4);max-height:92vh;overflow-y:auto}
 .bqt-card h3{margin:0 0 8px;font-size:20px}
 .bqt-card p{margin:0 0 14px;font-size:15px}
 .bqt-card .es{color:#5a5344;font-size:13px;margin-top:-8px}
@@ -1516,28 +1871,386 @@ cLoad();cRender();cApplyI18n();cUpdate();
 .bqt-card button,.bqt-card a.bqt-go{display:block;width:100%;box-sizing:border-box;text-align:center;background:#1d1a14;color:#f6f1e6;border:0;border-radius:8px;padding:12px;font-size:16px;font-weight:700;cursor:pointer;text-decoration:none;margin:0 0 10px}
 .bqt-card .bqt-x{display:block;margin:0 auto;background:none;border:0;color:#5a5344;font-size:14px;cursor:pointer;text-decoration:underline}
 .bqt-err{color:#b3261e;font-size:13px;min-height:16px;margin:0 0 8px}
+.bqt-card label.bqt-switchrow{display:flex;align-items:center;gap:10px;font-size:15px;margin:0 0 14px;cursor:pointer}
+.bqt-card label.bqt-switchrow input{width:22px;height:22px;margin:0;flex:none}
+.bqt-docrow{display:flex;align-items:center;gap:8px;border-top:1px solid #ddd3bd;padding:9px 0;font-size:14px}
+.bqt-docrow .bqt-docmeta{flex:1;min-width:0}
+.bqt-card .bqt-docrow button{width:auto;padding:7px 10px;font-size:13px;margin:0}
 </style>
+<script src="js/bqt-config.js"></script>
+<script src="js/bqt-auth.js"></script>
+<script src="js/qrcode.min.js"></script>
 <script>
 (function(){
 "use strict";
 var FREE_LIMIT=5;
+var TOOL=(location.pathname.indexOf('carpentry')>=0)?'carpentry':'painting';
+var STORE_KEY=(TOOL==='carpentry')?'carpentry-estimator-v1':'painting-estimator-v1';
+var TRUST='We never see your rates or your client data. Your saved quotes stay on your own device — yours until you delete them.';
 function g(k){try{return localStorage.getItem(k)}catch(e){return null}}
 function s(k,v){try{localStorage.setItem(k,v)}catch(e){}}
 function sg(k){try{return sessionStorage.getItem(k)}catch(e){return null}}
 function ss(k,v){try{sessionStorage.setItem(k,v)}catch(e){}}
-function used(){var n=parseInt(g('bqt_tests_used')||'0',10);return isNaN(n)?0:n}
-function isSub(){return g('bqt_subscribed')==='1'}
-function acct(){return g('bqt_email')}
+function esc(x){return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function cloud(){var c=window.BQTCloud;return (c&&c.configured)?c:null}
+function used(){
+  var c=cloud();
+  if(c&&c.user())return c.testsUsed();
+  var n=parseInt(g('bqt_tests_used')||'0',10);return isNaN(n)?0:n;
+}
+function countTest(){
+  var c=cloud();
+  if(c&&c.user()){c.setTestsUsed(c.testsUsed()+1);return}
+  s('bqt_tests_used',String(used()+1));
+}
+function isSub(){return g('bqt_subscribed')==='1'||g('bqt_profile_subscribed')==='1'}
+function acct(){var os=officeSession();if(os&&os.email)return os.email;var c=cloud();if(c&&c.user()&&c.user().email)return c.user().email;return g('bqt_email')}
+/* ---------- Office Access (locked spec §2) ----------
+   One standing office code per account, generated by the ACCOUNT HOLDER
+   in this browser — never by us — and only its SHA-256 hash ever leaves
+   the device (Supabase stores the hash; see schema.sql). An office
+   session is work-only: jobs and quotes yes; account settings,
+   subscription, payment and email controls no. On-device mode keeps the
+   same state in localStorage, exactly like the local account fallback. */
+function sha256Hex(ascii){
+  function rr(v,a){return (v>>>a)|(v<<(32-a))}
+  var maxWord=Math.pow(2,32),i,j,result='';
+  var words=[],asciiBitLength=ascii.length*8;
+  var hash=sha256Hex.h=sha256Hex.h||[],k=sha256Hex.k=sha256Hex.k||[];
+  var primeCounter=k.length,isComposite={};
+  for(var candidate=2;primeCounter<64;candidate++){
+    if(!isComposite[candidate]){
+      for(i=0;i<313;i+=candidate){isComposite[i]=candidate}
+      hash[primeCounter]=(Math.pow(candidate,.5)*maxWord)|0;
+      k[primeCounter++]=(Math.pow(candidate,1/3)*maxWord)|0;
+    }
+  }
+  ascii+='\x80';
+  while(ascii.length%64-56)ascii+='\x00';
+  for(i=0;i<ascii.length;i++){
+    j=ascii.charCodeAt(i);if(j>>8)return sha256Hex(unescape(encodeURIComponent(ascii)));
+    words[i>>2]|=j<<((3-i)%4)*8;
+  }
+  words[words.length]=(asciiBitLength/maxWord)|0;
+  words[words.length]=asciiBitLength;
+  for(j=0;j<words.length;){
+    var w=words.slice(j,j+=16),oldHash=hash;
+    hash=hash.slice(0,8);
+    for(i=0;i<64;i++){
+      var w15=w[i-15],w2=w[i-2],a=hash[0],e=hash[4];
+      var temp1=hash[7]+(rr(e,6)^rr(e,11)^rr(e,25))+((e&hash[5])^((~e)&hash[6]))+k[i]
+        +(w[i]=(i<16)?w[i]:(w[i-16]+(rr(w15,7)^rr(w15,18)^(w15>>>3))+w[i-7]+(rr(w2,17)^rr(w2,19)^(w2>>>10)))|0);
+      var temp2=(rr(a,2)^rr(a,13)^rr(a,22))+((a&hash[1])^(a&hash[2])^(hash[1]&hash[2]));
+      hash=[(temp1+temp2)|0].concat(hash);
+      hash[4]=(hash[4]+temp1)|0;
+    }
+    for(i=0;i<8;i++){hash[i]=(hash[i]+oldHash[i])|0}
+  }
+  for(i=0;i<8;i++){
+    for(j=3;j+1;j--){
+      var b=(hash[i]>>(j*8))&255;
+      result+=((b<16)?0:'')+b.toString(16);
+    }
+  }
+  return result;
+}
+var OFFICE_STORE_KEY='bqt_office_v1',OFFICE_GUARD_KEY='bqt_office_guard',OFFICE_SESSION_KEY='bqt_office_session';
+function officeStore(){
+  var st=null;try{st=JSON.parse(g(OFFICE_STORE_KEY)||'null')}catch(e){}
+  if(!st||typeof st!=='object')st={};
+  if(!Array.isArray(st.sessions))st.sessions=[];
+  if(!Array.isArray(st.pairings))st.pairings=[];
+  return st;
+}
+function officeSave(st){s(OFFICE_STORE_KEY,JSON.stringify(st))}
+function officeSession(){try{var os=JSON.parse(g(OFFICE_SESSION_KEY)||'null');return (os&&os.email)?os:null}catch(e){return null}}
+function officeGuard(){var gd=null;try{gd=JSON.parse(g(OFFICE_GUARD_KEY)||'null')}catch(e){}if(!gd||typeof gd!=='object')gd={fails:0,lockUntil:0};return gd}
+function officeGuardSave(gd){s(OFFICE_GUARD_KEY,JSON.stringify(gd))}
+function officeLockRemaining(){var gd=officeGuard();return Math.max(0,(+gd.lockUntil||0)-Date.now())}
+function officeGuardFail(){
+  var gd=officeGuard();gd.fails=(+gd.fails||0)+1;
+  if(gd.fails>=5){gd.lockUntil=Date.now()+15*60*1000;gd.fails=0;officeGuardSave(gd);return 0}
+  officeGuardSave(gd);return 5-gd.fails;
+}
+function officeGuardReset(){officeGuardSave({fails:0,lockUntil:0})}
+function officeRand(n){
+  var rnd=new Uint32Array(n),i;
+  if(window.crypto&&crypto.getRandomValues){crypto.getRandomValues(rnd)}else{for(i=0;i<n;i++)rnd[i]=(Math.random()*4294967296)>>>0}
+  return rnd;
+}
+function genOfficeCode(){
+  var alpha='ABCDEFGHJKMNPQRSTUVWXYZ23456789',out='',rnd=officeRand(16),i;
+  for(i=0;i<16;i++){out+=alpha[rnd[i]%alpha.length];if(i%4===3&&i<15)out+='-'}
+  return out;
+}
+function canonOfficeCode(v){var a=String(v||'').toUpperCase().replace(/[^A-Z0-9]/g,'');if(a.length!==16)return '';return a.slice(0,4)+'-'+a.slice(4,8)+'-'+a.slice(8,12)+'-'+a.slice(12)}
+function genPairToken(){
+  var alpha='ABCDEFGHJKMNPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz23456789',out='',rnd=officeRand(24),i;
+  for(i=0;i<24;i++)out+=alpha[rnd[i]%alpha.length];
+  return out;
+}
+function deviceLabel(){
+  var ua=navigator.userAgent||'';
+  var b=/Edg/.test(ua)?'Edge':/OPR|Opera/.test(ua)?'Opera':/Chrome/.test(ua)?'Chrome':/Firefox/.test(ua)?'Firefox':/Safari/.test(ua)?'Safari':'Browser';
+  var os=/Windows/.test(ua)?'Windows':/Android/.test(ua)?'Android':/iPhone|iPad/.test(ua)?'iOS':/Macintosh|Mac OS/.test(ua)?'Mac':/Linux/.test(ua)?'Linux':'';
+  return 'Office session — '+b+(os?' on '+os:'');
+}
+function fmtDate(ts){return new Date(ts).toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'})}
+function ensureLocalOfficeCode(){
+  if(cloud())return;
+  if(!g('bqt_email'))return;
+  var st=officeStore();
+  if(!st.code){var code=genOfficeCode();st.code=code;st.codeHash=sha256Hex(code);st.createdAt=Date.now();officeSave(st)}
+}
+function ensureCloudOfficeCode(c){
+  if(!c||!c.user())return;
+  c.getOfficeCode().then(function(row){
+    if(row)return null;
+    var code=genOfficeCode();
+    s('bqt_office_code_display',code);
+    return c.setOfficeCodeHash(sha256Hex(code));
+  }).catch(function(){});
+}
+function startOfficeSession(email,cloudSid){
+  officeGuardReset();
+  var st=officeStore(),id=cloudSid||('local-'+Date.now());
+  st.sessions.push({id:id,label:deviceLabel(),createdAt:Date.now(),lastSeenAt:Date.now(),revokedAt:null});
+  officeSave(st);
+  s(OFFICE_SESSION_KEY,JSON.stringify({id:id,email:email,startedAt:Date.now()}));
+  paint();
+}
+function endOfficeSession(){
+  try{localStorage.removeItem(OFFICE_SESSION_KEY)}catch(e){}
+  closeOverlay();paint();
+}
+function tryPairing(token,onOk,onFail){
+  var h=sha256Hex(token),st=officeStore(),hit=null;
+  st.pairings.forEach(function(p){if(p.h===h&&!p.used&&p.exp>Date.now())hit=p});
+  if(hit&&acct()){hit.used=true;officeSave(st);onOk(acct(),null);return}
+  var c=window.BQTCloud;
+  if(c&&c.configured&&c.redeemPairing){
+    c.redeemPairing(token,deviceLabel()).then(function(r){
+      if(r&&r.email)onOk(r.email,r.sessionId);else if(onFail)onFail();
+    }).catch(function(){if(onFail)onFail()});
+  }else if(onFail)onFail();
+}
+function checkPairingParam(){
+  var m=/[?&]bqt_pair=([^&]+)/.exec(location.search||'');
+  if(!m)return;
+  var token=decodeURIComponent(m[1]);
+  try{history.replaceState(null,'',location.pathname+location.hash)}catch(e){}
+  tryPairing(token,function(email,sid){startOfficeSession(email,sid)},null);
+}
+function officeSectionHtml(){
+  return '<div style="border-top:2px solid #1d1a14;margin-top:6px;padding-top:14px"><h3 style="font-size:17px">Office Access</h3>'+
+  '<p>Your office code signs a helper in on any device to work <strong>jobs and quotes only</strong> — it cannot open account settings, subscription, or payment. The code is created here, in your browser; we never see it.</p>'+
+  '<div id="bqtOfficeBody"><p class="es">Loading office access…</p></div></div>';
+}
+function officeCodeAreaHtml(code,note){
+  var h='';
+  if(code){h+='<p style="margin:0 0 4px">Your office code:</p><p style="font-family:monospace;font-size:21px;letter-spacing:2px;margin:0 0 10px"><strong>'+esc(code)+'</strong></p>'}
+  else if(note){h+='<p class="es">'+esc(note)+'</p>'}
+  h+='<button type="button" id="bqtOfficeReset">'+(code?'Reset code':'Create a new code')+'</button>';
+  h+='<button type="button" id="bqtOfficeQr">Show QR for office sign-in</button>';
+  h+='<div id="bqtQrBox"></div>';
+  h+='<p style="margin:14px 0 6px"><strong>Sessions</strong></p><div id="bqtOfficeSessions"><p class="es">Loading sessions…</p></div>';
+  return h;
+}
+function renderOfficeBody(o){
+  var box=o.querySelector('#bqtOfficeBody');if(!box)return;
+  var c=cloud(),u=c?c.user():null;
+  if(!c){
+    if(!g('bqt_email')){box.innerHTML='<p class="es">Create your account first — your office code is generated with it.</p>';return}
+    ensureLocalOfficeCode();
+    var st=officeStore();
+    box.innerHTML=officeCodeAreaHtml(st.code,null);
+    wireOfficeButtons(o);
+    renderOfficeSessions(o,null);
+    return;
+  }
+  if(!u){box.innerHTML='<p class="es">Sign in to manage Office Access.</p>';return}
+  c.getOfficeCode().then(function(row){
+    if(!document.body.contains(box))return;
+    if(!row){
+      var code=genOfficeCode();
+      s('bqt_office_code_display',code);
+      c.setOfficeCodeHash(sha256Hex(code)).catch(function(){});
+      box.innerHTML=officeCodeAreaHtml(code,null);
+    }else{
+      var disp=g('bqt_office_code_display');
+      if(disp&&sha256Hex(disp)===row.code_hash){box.innerHTML=officeCodeAreaHtml(disp,null)}
+      else{box.innerHTML=officeCodeAreaHtml(null,'An office code is set on this account, but it was created on another device, so it cannot be shown here. Reset it to get a new code on this device — the old code stops working right away.')}
+    }
+    wireOfficeButtons(o);
+    renderOfficeSessions(o,c);
+  }).catch(function(){if(document.body.contains(box))box.innerHTML='<p class="es">Could not load Office Access right now.</p>'});
+}
+function wireOfficeButtons(o){
+  var r=o.querySelector('#bqtOfficeReset');
+  if(r)r.addEventListener('click',function(){
+    var code=genOfficeCode(),c=cloud();
+    if(c&&c.user()){
+      s('bqt_office_code_display',code);
+      c.setOfficeCodeHash(sha256Hex(code)).then(function(){renderOfficeBody(o)}).catch(function(){renderOfficeBody(o)});
+    }else{
+      var st=officeStore();st.code=code;st.codeHash=sha256Hex(code);st.createdAt=Date.now();officeSave(st);
+      renderOfficeBody(o);
+    }
+  });
+  var q=o.querySelector('#bqtOfficeQr');
+  if(q)q.addEventListener('click',function(){showOfficeQr(o)});
+}
+function showOfficeQr(o){
+  var box=o.querySelector('#bqtQrBox');if(!box)return;
+  var token=genPairToken(),exp=Date.now()+10*60*1000,hash=sha256Hex(token),c=cloud();
+  var st=officeStore();
+  st.pairings=st.pairings.filter(function(p){return !p.used&&p.exp>Date.now()});
+  st.pairings.push({h:hash,exp:exp,used:false});
+  officeSave(st);
+  if(c&&c.user()){c.createPairing(hash,new Date(exp).toISOString()).catch(function(){})}
+  var url=location.origin+location.pathname+'?bqt_pair='+encodeURIComponent(token);
+  var svg='';
+  try{
+    if(window.qrcode){var qr=window.qrcode(0,'M');qr.addData(url);qr.make();svg=qr.createSvgTag({cellSize:4,margin:8,scalable:true})}
+  }catch(e){svg=''}
+  var h='<div style="border:2px solid #1d1a14;padding:12px;margin:10px 0;text-align:center;background:#fff">';
+  if(svg){h+='<div style="max-width:220px;margin:0 auto">'+svg+'</div>'}
+  h+='<p style="font-family:monospace;font-size:19px;letter-spacing:1px;margin:10px 0 4px;word-break:break-all"><strong>'+esc(token)+'</strong></p>'+
+  '<p class="es" style="margin:0">Scan the QR — or enter this pairing code on the office sign-in screen — within 10 minutes. It works once and opens a work-only office session.</p></div>';
+  box.innerHTML=h;
+}
+function renderOfficeSessions(o,c){
+  var box=o.querySelector('#bqtOfficeSessions');if(!box)return;
+  var head='<div class="bqt-docrow"><div class="bqt-docmeta">This device — account owner<br><span style="color:#5a5344;font-size:12px">Full access</span></div></div>';
+  if(c&&c.user()){
+    c.listOfficeSessions().then(function(rows){
+      if(!document.body.contains(box))return;
+      rows=rows.filter(function(r){return !r.revoked_at});
+      var h=head;
+      if(!rows.length){box.innerHTML=h+'<p class="es">No office sessions yet.</p>';return}
+      rows.forEach(function(r){
+        h+='<div class="bqt-docrow"><div class="bqt-docmeta">'+esc(r.label||'Office session')+'<br><span style="color:#5a5344;font-size:12px">Started '+esc(fmtDate(new Date(r.created_at).getTime()))+'</span></div><button type="button" data-osrevoke="'+r.id+'">Revoke</button></div>';
+      });
+      box.innerHTML=h;wireRevokeButtons(o,c);
+    }).catch(function(){if(document.body.contains(box))box.innerHTML=head+'<p class="es">Could not load sessions right now.</p>'});
+    return;
+  }
+  var st=officeStore(),act=st.sessions.filter(function(x){return !x.revokedAt}),h=head;
+  if(!act.length){box.innerHTML=h+'<p class="es">No office sessions yet.</p>';return}
+  act.forEach(function(x){
+    h+='<div class="bqt-docrow"><div class="bqt-docmeta">'+esc(x.label||'Office session')+'<br><span style="color:#5a5344;font-size:12px">Started '+esc(fmtDate(x.createdAt))+'</span></div><button type="button" data-osrevoke="'+esc(x.id)+'">Revoke</button></div>';
+  });
+  box.innerHTML=h;wireRevokeButtons(o,null);
+}
+function wireRevokeButtons(o,c){
+  o.querySelectorAll('[data-osrevoke]').forEach(function(b){b.addEventListener('click',function(){
+    var id=b.getAttribute('data-osrevoke');
+    if(c&&c.user()){c.revokeOfficeSession(id).then(function(){renderOfficeSessions(o,c)}).catch(function(){})}
+    else{
+      var st=officeStore();
+      st.sessions.forEach(function(x){if(x.id===id)x.revokedAt=Date.now()});
+      officeSave(st);
+      var os=officeSession();
+      if(os&&os.id===id){endOfficeSession();return}
+      renderOfficeSessions(o,null);
+    }
+  })});
+}
+function wireOfficeSection(o){renderOfficeBody(o)}
+function showOfficeInfo(){
+  var os=officeSession();
+  var o=overlay('<div class="bqt-card"><h3>Office session — work only</h3>'+
+  '<p>This device is signed in with an office code for <strong>'+esc(os?os.email:'')+'</strong>. Office sessions work jobs and quotes only — account settings, subscription, payment and email stay with the account owner.</p>'+
+  '<button type="button" id="bqtExitOffice2">Exit office session</button>'+
+  '<button type="button" class="bqt-x" id="bqtCancel">Close</button></div>');
+  o.querySelector('#bqtCancel').addEventListener('click',closeOverlay);
+  o.querySelector('#bqtExitOffice2').addEventListener('click',function(){endOfficeSession()});
+}
+function showOfficeSignin(){
+  var o=overlay('<div class="bqt-card"><h3>Office sign-in</h3>'+
+  '<p>Enter the office code from the account owner. An office session works <strong>jobs and quotes only</strong> — it cannot open account settings, subscription, or payment.</p>'+
+  '<p class="bqt-err" id="bqtErr"></p>'+
+  '<div id="bqtOfficeStep"><input type="text" id="bqtOfficeCode" placeholder="Office code" autocomplete="off">'+
+  '<button type="button" id="bqtOfficeGo">Sign in with office code</button>'+
+  '<button type="button" class="bqt-x" id="bqtPairMode">Have a pairing code from a QR instead?</button></div>'+
+  '<div id="bqtPairStep" style="display:none"><input type="text" id="bqtPairCode" placeholder="Pairing code" autocomplete="off">'+
+  '<button type="button" id="bqtPairGo">Use pairing code</button>'+
+  '<button type="button" class="bqt-x" id="bqtCodeMode">Back to office code</button></div>'+
+  '<button type="button" class="bqt-x" id="bqtCancel">Cancel</button></div>');
+  var err=o.querySelector('#bqtErr'),inp=o.querySelector('#bqtOfficeCode'),go=o.querySelector('#bqtOfficeGo');
+  inp.focus();
+  o.querySelector('#bqtCancel').addEventListener('click',function(){closeOverlay()});
+  o.querySelector('#bqtPairMode').addEventListener('click',function(){
+    err.textContent='';o.querySelector('#bqtOfficeStep').style.display='none';o.querySelector('#bqtPairStep').style.display='';o.querySelector('#bqtPairCode').focus();
+  });
+  o.querySelector('#bqtCodeMode').addEventListener('click',function(){
+    err.textContent='';o.querySelector('#bqtPairStep').style.display='none';o.querySelector('#bqtOfficeStep').style.display='';inp.focus();
+  });
+  function lockedMsg(){
+    var left=officeLockRemaining();
+    if(left>0){var mins=Math.ceil(left/60000);err.textContent='Too many wrong tries — office sign-in is locked for '+mins+' more minute'+(mins===1?'':'s')+'.';go.disabled=true;return true}
+    return false;
+  }
+  lockedMsg();
+  go.addEventListener('click',function(){
+    if(lockedMsg())return;
+    var canon=canonOfficeCode(inp.value);
+    if(!canon){err.textContent='That does not look like an office code — it is 16 letters and numbers.';return}
+    var hash=sha256Hex(canon),c=cloud();
+    function fail(){
+      var left=officeGuardFail();
+      if(left<=0){err.textContent='Too many wrong tries — office sign-in is now locked for 15 minutes.';go.disabled=true}
+      else{err.textContent='That code did not match. '+left+' '+(left===1?'try':'tries')+' left before a 15-minute lock.'}
+    }
+    if(!c){
+      var st=officeStore();
+      if(st.codeHash&&st.codeHash===hash&&g('bqt_email')){closeOverlay();startOfficeSession(g('bqt_email'),null)}
+      else{fail()}
+      return;
+    }
+    go.disabled=true;go.textContent='Checking…';
+    c.officeSigninLookup(hash,deviceLabel()).then(function(r){
+      go.disabled=false;go.textContent='Sign in with office code';
+      if(r&&r.email){closeOverlay();startOfficeSession(r.email,r.sessionId)}
+      else{fail()}
+    }).catch(function(){
+      go.disabled=false;go.textContent='Sign in with office code';
+      err.textContent='Could not check the code right now — try again in a moment.';
+    });
+  });
+  o.querySelector('#bqtPairGo').addEventListener('click',function(){
+    var token=(o.querySelector('#bqtPairCode').value||'').trim();
+    if(!token){err.textContent='Enter the pairing code from the QR screen.';return}
+    err.textContent='';
+    tryPairing(token,function(email,sid){closeOverlay();startOfficeSession(email,sid)},function(){
+      err.textContent='That pairing code did not work — it may have expired (10 minutes) or already been used.';
+    });
+  });
+}
 var pendingEl=null,resumeCount=false;
 var pill=document.createElement('div');pill.className='bqt-pill';document.body.appendChild(pill);
 function paint(){
-  if(isSub()){pill.innerHTML='BestQuoteTool · <strong>Unlimited</strong> — subscribed';return}
+  var os=officeSession();
+  if(os){
+    var st=officeStore(),rec=null;
+    st.sessions.forEach(function(x){if(x.id===os.id)rec=x});
+    if(rec&&rec.revokedAt){try{localStorage.removeItem(OFFICE_SESSION_KEY)}catch(e){}os=null}
+  }
+  if(os){
+    pill.innerHTML='BestQuoteTool · <strong>Office session</strong> — work only · '+esc(os.email)+' <a href="#" id="bqtExitOffice">Exit office session</a>';
+    var xo=pill.querySelector('#bqtExitOffice');
+    if(xo)xo.addEventListener('click',function(e){e.preventDefault();endOfficeSession()});
+    return;
+  }
+  if(isSub()){pill.innerHTML='BestQuoteTool · <strong>Unlimited</strong> — subscribed <a href="#" id="bqtAcct">Account</a>';wirePill();return}
   var u=used();
   var t='BestQuoteTool · Free tests: <strong>'+u+' of '+FREE_LIMIT+' used</strong>';
-  if(acct()){t+=' · '+acct()}
-  if(u>=FREE_LIMIT){t+='<a href="index.html#subscribe">Subscribe — $15/month</a>'}
-  pill.innerHTML=t;
+  if(acct()){t+=' · '+esc(acct())}
+  if(u>=FREE_LIMIT){t+='<a href="index.html#subscribe">Subscribe — $19/month</a>'}
+  t+=' <a href="#" id="bqtAcct">Account</a>';
+  pill.innerHTML=t;wirePill();
 }
+function wirePill(){var a=pill.querySelector('#bqtAcct');if(a)a.addEventListener('click',function(e){e.preventDefault();showAccount()})}
 function overlay(html){
   closeOverlay();
   var o=document.createElement('div');o.className='bqt-overlay';o.id='bqtOverlay';o.innerHTML=html;
@@ -1546,35 +2259,201 @@ function overlay(html){
 }
 function closeOverlay(){var o=document.getElementById('bqtOverlay');if(o)o.remove()}
 function showSignup(){
+  var c=cloud();
+  if(c){showSignupCloud(c);return}
   var o=overlay('<div class="bqt-card"><h3>Create your free account</h3>'+
   '<p>Sign up first — no charge, no card. Then make 5 real estimates free with the whole tool.</p>'+
   '<p class="es">Crea tu cuenta gratis primero — sin cargo, sin tarjeta. Luego haz 5 estimaciones reales gratis.</p>'+
   '<p class="bqt-err" id="bqtErr"></p>'+
   '<input type="email" id="bqtEmail" placeholder="you@company.com" autocomplete="email">'+
+  '<label class="bqt-switchrow"><input type="checkbox" id="bqtAgree"><span>I agree to the <a href="terms.html" target="_blank" rel="noopener">Terms of Service</a> and <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a><br><span style="color:#5a5344;font-size:13px">Acepto los Términos de servicio y la Política de privacidad.</span></span></label>'+
   '<button type="button" id="bqtGo">Create my account</button>'+
+  '<button type="button" class="bqt-x" id="bqtOfficeIn">Have an office code? Office sign-in</button>'+
   '<button type="button" class="bqt-x" id="bqtCancel">Not now</button></div>');
   var inp=o.querySelector('#bqtEmail');inp.focus();
   o.querySelector('#bqtCancel').addEventListener('click',function(){pendingEl=null;resumeCount=false;closeOverlay()});
+  o.querySelector('#bqtOfficeIn').addEventListener('click',function(){pendingEl=null;resumeCount=false;closeOverlay();showOfficeSignin()});
   o.querySelector('#bqtGo').addEventListener('click',function(){
+    if(!o.querySelector('#bqtAgree').checked){o.querySelector('#bqtErr').textContent='Please check the box to agree to the Terms of Service and Privacy Policy first.';return}
     var v=(inp.value||'').trim();
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){o.querySelector('#bqtErr').textContent='Please enter a valid email.';return}
-    s('bqt_email',v);paint();closeOverlay();
+    s('bqt_email',v);ensureLocalOfficeCode();paint();closeOverlay();
     if(pendingEl){var el=pendingEl;pendingEl=null;resumeCount=true;el.click()}
   });
 }
+function showSignupCloud(c){
+  var o=overlay('<div class="bqt-card"><h3>Create your free account</h3>'+
+  '<p>Sign up first — no charge, no card. We email you a 6-digit code; enter it here and your account is ready. Then make 5 real estimates free with the whole tool.</p>'+
+  '<p class="es">Crea tu cuenta gratis — te enviamos un código de 6 dígitos por correo. Luego haz 5 estimaciones reales gratis.</p>'+
+  '<p class="bqt-err" id="bqtErr"></p>'+
+  '<div id="bqtStep1"><input type="email" id="bqtEmail" placeholder="you@company.com" autocomplete="email">'+
+  '<label class="bqt-switchrow"><input type="checkbox" id="bqtAgree"><span>I agree to the <a href="terms.html" target="_blank" rel="noopener">Terms of Service</a> and <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a><br><span style="color:#5a5344;font-size:13px">Acepto los Términos de servicio y la Política de privacidad.</span></span></label>'+
+  '<button type="button" id="bqtSend">Email me the code</button></div>'+
+  '<div id="bqtStep2" style="display:none"><input type="text" id="bqtCode" placeholder="6-digit code" inputmode="numeric" autocomplete="one-time-code" maxlength="6">'+
+  '<button type="button" id="bqtVerify">Verify code &amp; create my account</button>'+
+  '<button type="button" class="bqt-x" id="bqtAgain">Use a different email</button></div>'+
+  '<button type="button" class="bqt-x" id="bqtOfficeIn">Have an office code? Office sign-in</button>'+
+  '<button type="button" class="bqt-x" id="bqtCancel">Not now</button></div>');
+  var inp=o.querySelector('#bqtEmail'),err=o.querySelector('#bqtErr'),
+      sendBtn=o.querySelector('#bqtSend'),codeInp=o.querySelector('#bqtCode'),verBtn=o.querySelector('#bqtVerify');
+  inp.focus();
+  o.querySelector('#bqtCancel').addEventListener('click',function(){pendingEl=null;resumeCount=false;closeOverlay()});
+  o.querySelector('#bqtOfficeIn').addEventListener('click',function(){pendingEl=null;resumeCount=false;closeOverlay();showOfficeSignin()});
+  o.querySelector('#bqtAgain').addEventListener('click',function(){
+    err.textContent='';o.querySelector('#bqtStep2').style.display='none';o.querySelector('#bqtStep1').style.display='';inp.focus();
+  });
+  sendBtn.addEventListener('click',function(){
+    if(!o.querySelector('#bqtAgree').checked){err.textContent='Please check the box to agree to the Terms of Service and Privacy Policy first.';return}
+    var v=(inp.value||'').trim();
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){err.textContent='Please enter a valid email.';return}
+    err.textContent='';sendBtn.disabled=true;sendBtn.textContent='Sending…';
+    c.signIn(v).then(function(){
+      sendBtn.disabled=false;sendBtn.textContent='Email me the code';
+      o.querySelector('#bqtStep1').style.display='none';o.querySelector('#bqtStep2').style.display='';
+      codeInp.focus();
+    }).catch(function(e){
+      sendBtn.disabled=false;sendBtn.textContent='Email me the code';
+      err.textContent=(e&&e.message)?e.message:'Could not send the code — please try again.';
+    });
+  });
+  verBtn.addEventListener('click',function(){
+    var code=(codeInp.value||'').trim(),v=(inp.value||'').trim();
+    if(!/^\d{6}$/.test(code)){err.textContent='Please enter the 6-digit code from your email.';return}
+    err.textContent='';verBtn.disabled=true;verBtn.textContent='Checking…';
+    c.verify(v,code).then(function(){
+      ensureCloudOfficeCode(c);paint();closeOverlay();
+      if(pendingEl){var el=pendingEl;pendingEl=null;resumeCount=true;el.click()}
+    }).catch(function(){
+      verBtn.disabled=false;verBtn.textContent='Verify code & create my account';
+      err.textContent='That code did not work — check it and try again. Asking for a new code never uses one of your free tests.';
+    });
+  });
+}
+function subscribeHref(){
+  var c=window.BQTCloud,l=c?c.stripeLink('base'):'';
+  return l||'index.html#subscribe';
+}
 function showSubscribe(kind){
+  if(officeSession()){var oo=overlay('<div class="bqt-card"><h3>Office session — work only</h3><p>This device is signed in with an office code. Office sessions can work jobs and quotes, but they cannot change the subscription or payment. Ask the account owner to do that from their own sign-in.</p><button type="button" class="bqt-x" id="bqtCancel">Close</button></div>');oo.querySelector('#bqtCancel').addEventListener('click',closeOverlay);return}
   var h,p;
   if(kind==='docs'){
     h='Downloads come with the subscription';
-    p='Your free tests show you the whole tool, with the finished estimate on your screen. Subscribers download, print and copy unlimited documents — $15/month, cancel anytime.';
+    p='Your free tests show you the whole tool, with the finished estimate on your screen. Subscribers download, print and copy unlimited documents — $19/month, cancel anytime.';
   }else{
     h='Your 5 free tests are used';
-    p='Subscribe for unlimited estimates and documents — $15/month, cancel anytime.';
+    p='Subscribe for unlimited estimates and documents — $19/month, cancel anytime.';
   }
   var o=overlay('<div class="bqt-card"><h3>'+h+'</h3><p>'+p+'</p>'+
-  '<a class="bqt-go" href="index.html#subscribe">Subscribe — $15/month</a>'+
+  '<a class="bqt-go" href="'+subscribeHref()+'">Subscribe — $19/month</a>'+
   '<button type="button" class="bqt-x" id="bqtCancel">Keep looking</button></div>');
   o.querySelector('#bqtCancel').addEventListener('click',closeOverlay);
+}
+var CLOUD_COPY='<p><strong>Cloud Saving — +$5/month</strong></p><p>Safety for your business: if this phone or computer is lost, broken or replaced, everything saved only on it is lost with it. With Cloud Saving on, your quotes, invoices and receipts are stored in your account — sign in on any device and they\'re all there. Off: your documents stay only on this device, private as always. Your choice — switch it on or off anytime.</p>';
+function cloudSectionHtml(c,u,prof){
+  var h='<div style="border-top:2px solid #1d1a14;margin-top:6px;padding-top:14px"><h3 style="font-size:17px">Cloud Saving</h3>'+CLOUD_COPY;
+  if(!c){
+    h+='<p class="es">Cloud Saving becomes available when online accounts launch.</p>';
+  }else if(!u){
+    h+='<p class="es">Sign in to manage Cloud Saving.</p>';
+  }else if(!(prof&&prof.cloud_saving)){
+    if(prof&&prof.subscribed){
+      var l=c.stripeLink('cloud');
+      h+=l?('<a class="bqt-go" href="'+l+'">Add Cloud Saving — $5/month</a>'):'<p class="es">Cloud Saving checkout opens at launch.</p>';
+    }else{
+      h+='<p class="es">Cloud Saving is an add-on for subscribers.</p>';
+    }
+  }else{
+    var on=c.cloudEnabledPref();
+    h+='<label class="bqt-switchrow"><input type="checkbox" id="bqtCloudToggle"'+(on?' checked':'')+'><span>Cloud Saving is '+(on?'on':'off')+' on this account</span></label><div id="bqtDocs"></div>';
+  }
+  return h+'</div>';
+}
+function renderDocs(o,c){
+  var box=o.querySelector('#bqtDocs');if(!box)return;
+  if(!c.cloudActive()){box.innerHTML='<p class="es">Cloud Saving is off — new documents stay only on this device. Documents already saved stay in your account.</p>';return}
+  box.innerHTML='<p class="es">Loading your saved documents…</p>';
+  c.listDocuments(TOOL).then(function(rows){
+    var h='<p><strong>Saved documents</strong></p>';
+    if(!rows.length){h+='<p class="es">No saved documents yet — generate a document and it will be saved here.</p>'}
+    rows.forEach(function(r){
+      var d=new Date(r.updated_at||r.created_at);
+      h+='<div class="bqt-docrow"><div class="bqt-docmeta">'+esc(r.title||'Document')+'<br><span style="color:#5a5344;font-size:12px">v'+(r.version||1)+' · '+esc(d.toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'}))+'</span></div>'+
+      '<button type="button" data-restore="'+r.id+'">Restore</button><button type="button" data-del="'+r.id+'">Delete</button></div>';
+    });
+    h+='<div style="margin-top:10px"><button type="button" class="bqt-x" id="bqtTrashToggle" style="margin:0">Trash</button><div id="bqtTrashList"></div></div>';
+    box.innerHTML=h;
+    box.querySelectorAll('[data-restore]').forEach(function(b){b.addEventListener('click',function(){
+      b.disabled=true;b.textContent='Restoring…';
+      c.fetchDocument(b.getAttribute('data-restore')).then(function(row){
+        try{localStorage.setItem(STORE_KEY,JSON.stringify(row.doc))}catch(e){}
+        location.reload();
+      }).catch(function(){b.disabled=false;b.textContent='Restore'});
+    })});
+    box.querySelectorAll('[data-del]').forEach(function(b){b.addEventListener('click',function(){
+      b.disabled=true;
+      c.deleteDocument(b.getAttribute('data-del')).then(function(){renderDocs(o,c)}).catch(function(){b.disabled=false});
+    })});
+    var tt=box.querySelector('#bqtTrashToggle');
+    if(tt)tt.addEventListener('click',function(){renderTrash(o,c)});
+  }).catch(function(){box.innerHTML='<p class="es">Could not load your saved documents right now.</p>'});
+}
+function renderTrash(o,c){
+  var box=o.querySelector('#bqtTrashList');if(!box)return;
+  if(box.getAttribute('data-open')){box.innerHTML='';box.removeAttribute('data-open');return}
+  box.setAttribute('data-open','1');
+  box.innerHTML='<p class="es">Loading trash…</p>';
+  c.listTrashedDocuments(TOOL).then(function(rows){
+    if(!rows.length){box.innerHTML='<p class="es">Trash is empty. Deleted documents land here and can be restored.</p>';return}
+    var h='';
+    rows.forEach(function(r){
+      var d=new Date(r.deleted_at||r.updated_at||r.created_at);
+      h+='<div class="bqt-docrow"><div class="bqt-docmeta">'+esc(r.title||'Document')+'<br><span style="color:#5a5344;font-size:12px">v'+(r.version||1)+' · deleted '+esc(d.toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'}))+'</span></div>'+
+      '<button type="button" data-untrash="'+r.id+'">Restore</button><button type="button" data-forever="'+r.id+'">Delete forever</button></div>';
+    });
+    box.innerHTML=h;
+    box.querySelectorAll('[data-untrash]').forEach(function(b){b.addEventListener('click',function(){
+      b.disabled=true;
+      c.restoreDocument(b.getAttribute('data-untrash')).then(function(){renderDocs(o,c)}).catch(function(){b.disabled=false});
+    })});
+    box.querySelectorAll('[data-forever]').forEach(function(b){b.addEventListener('click',function(){
+      if(b.getAttribute('data-armed')){c.hardDeleteDocument(b.getAttribute('data-forever')).then(function(){renderDocs(o,c)})}
+      else{b.setAttribute('data-armed','1');b.textContent='Tap again to delete forever'}
+    })});
+  }).catch(function(){box.innerHTML='<p class="es">Could not load the trash right now.</p>'});
+}
+function wireCloudSection(o,c){
+  var t=o.querySelector('#bqtCloudToggle');if(!t||!c)return;
+  t.addEventListener('change',function(){
+    c.setCloudEnabled(t.checked).then(function(){showAccount()}).catch(function(){showAccount()});
+  });
+  renderDocs(o,c);
+}
+function showAccount(){
+  if(officeSession()){showOfficeInfo();return}
+  var c=cloud(),u=c?c.user():null,prof=c?c.profile():null;
+  var email=acct();
+  var planLine=isSub()?'<p>Plan: <strong>Subscribed — unlimited</strong></p>':'<p>Plan: <strong>Free</strong> — '+used()+' of '+FREE_LIMIT+' tests used</p>';
+  var h='<div class="bqt-card"><h3>Your account</h3>';
+  if(c){
+    h+=u?('<p>'+esc(email)+'</p>'+planLine):'<p>You are not signed in on this device yet.</p>';
+  }else{
+    h+='<p>'+(email?esc(email):'No account on this device yet.')+'</p>'+planLine+
+       '<p class="es">Online accounts turn on at launch. Until then your account and documents stay on this device — exactly as they do today.</p>';
+  }
+  h+=cloudSectionHtml(c,u,prof);
+  h+=officeSectionHtml();
+  h+='<p class="es">'+TRUST+'</p>';
+  if(c&&u){h+='<button type="button" id="bqtSignOut">Sign out</button>'}
+  else if(c){h+='<button type="button" id="bqtSignIn">Sign in / Create account</button>'}
+  h+='<button type="button" class="bqt-x" id="bqtOfficeBtn">Office sign-in</button>';
+  h+='<button type="button" class="bqt-x" id="bqtCancel">Close</button></div>';
+  var o=overlay(h);
+  o.querySelector('#bqtCancel').addEventListener('click',closeOverlay);
+  var so=o.querySelector('#bqtSignOut');if(so)so.addEventListener('click',function(){c.signOut().then(function(){paint();closeOverlay()})});
+  var si=o.querySelector('#bqtSignIn');if(si)si.addEventListener('click',function(){closeOverlay();showSignup()});
+  wireCloudSection(o,c);
+  wireOfficeSection(o);
+  var ob=o.querySelector('#bqtOfficeBtn');if(ob)ob.addEventListener('click',function(){closeOverlay();showOfficeSignin()});
 }
 function kindOf(el){
   return el.getAttribute('data-act')||el.getAttribute('data-cact')||'doc';
@@ -1589,7 +2468,7 @@ function gateGenerate(el){
     else{pendingEl=el;showSignup();return false}
   }
   if(used()>=FREE_LIMIT){showSubscribe('tests');return false}
-  s('bqt_tests_used',String(used()+1));ss(flag,'1');paint();return true;
+  countTest();ss(flag,'1');paint();return true;
 }
 function gateDoc(el){
   if(isSub()){return true}
@@ -1605,6 +2484,10 @@ document.querySelectorAll(GEN_SEL).forEach(function(el){
   el.addEventListener('click',function(e){
     var wasResume=resumeCount;resumeCount=false;
     if(!gateGenerate(el)){e.preventDefault();e.stopPropagation()}
+    else{
+      var kind=kindOf(el);
+      setTimeout(function(){var c=cloud();if(c)c.maybeSaveSnapshot(TOOL,kind,STORE_KEY)},1500);
+    }
   },true);
 });
 document.querySelectorAll(DOC_SEL).forEach(function(el){
@@ -1613,6 +2496,9 @@ document.querySelectorAll(DOC_SEL).forEach(function(el){
   },true);
 });
 paint();
+checkPairingParam();
+window.addEventListener('bqt-auth-changed',function(){paint()});
+if(window.BQTCloud&&window.BQTCloud.ready){window.BQTCloud.ready.then(function(){paint()})}
 })();
 </script>
 

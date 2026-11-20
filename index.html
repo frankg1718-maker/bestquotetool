@@ -65,7 +65,8 @@ footer{margin:34px 0 0;font-family:var(--mono);font-size:13px;text-align:center;
     <span class="kicker">For painting &amp; carpentry contractors</span>
     <h1>BestQuoteTool</h1>
     <p class="sub">Two working estimators built from 23+ years in the trade. Measure the job, price it with your own rates, and download a clean estimate your client can sign — right from your phone.</p>
-    <p class="price-line"><strong>$15/month</strong> &nbsp;Unlimited documents &nbsp;·&nbsp; First 5 estimates free &nbsp;·&nbsp; English &amp; Spanish</p>
+    <p class="price-line"><strong>$19/month</strong> &nbsp;Unlimited documents &nbsp;·&nbsp; First 5 estimates free &nbsp;·&nbsp; English &amp; Spanish</p>
+    <p class="price-line">One subscription covers web, desktop, and the Android app.</p>
   </header>
 
   <div class="tools">
@@ -75,9 +76,14 @@ footer{margin:34px 0 0;font-family:var(--mono);font-size:13px;text-align:center;
       <a class="btn" href="painting.html">Open the Painting Estimator</a>
     </div>
     <div class="tool">
-      <h2>Carpentry &amp; Task Estimator</h2>
-      <p>Trim packages, doors, built-ins and the small tasks that ride along on every job — priced the way a carpenter actually charges.</p>
-      <a class="btn" href="carpentry.html">Open the Carpentry Estimator</a>
+      <h2>Task &amp; Other Trades</h2>
+      <p>Built for carpentry — trim packages, doors, built-ins and the small tasks that ride along on every job — and open to every other trade. Each task carries its own tabs: description, measurements, materials &amp; supplies, schedule &amp; frequency, checklist, options &amp; add-ons, photos, and notes &amp; terms. Every title, description and measurement is editable.</p>
+      <a class="btn" href="carpentry.html">Open the Task &amp; Other Trades Estimator</a>
+    </div>
+    <div class="tool">
+      <h2>House Cleaning</h2>
+      <p>The same Task &amp; Other Trades estimator, set up for a cleaning crew: a Deep Clean task priced per visit, a room-by-room checklist tab, a schedule &amp; frequency tab for recurring homes, materials &amp; supplies, and options &amp; add-ons like inside oven or laundry. Save the setup as a template and the next house takes a minute.</p>
+      <a class="btn" href="carpentry.html">Open the Task &amp; Other Trades Estimator</a>
     </div>
   </div>
 
@@ -94,11 +100,12 @@ footer{margin:34px 0 0;font-family:var(--mono);font-size:13px;text-align:center;
 
   <div class="subscribe" id="subscribe">
     <h2>Try it free — your first 5 estimates are on us</h2>
-    <p>Create your account with your email and make 5 real estimates with your own rates — the whole tool, no card needed. Then $15/month for unlimited estimates and documents, downloads included. Share straight from the app to your clients, by your preferred method. Every document is completely editable before you share or download it — the finalized document is yours. Cancel anytime.</p>
+    <p>Create your account with your email and make 5 real estimates with your own rates — the whole tool, no card needed. Then $19/month for unlimited estimates and documents, downloads included. One subscription covers web, desktop, and the Android app. Share straight from the app to your clients, by your preferred method. Every document is completely editable before you share or download it — the finalized document is yours. Cancel anytime.</p>
     <a class="btn" href="painting.html">Start free — make your 5 estimates</a>
-    <!-- STRIPE SLOT: replace the href below with the Stripe Payment Link once Stripe is connected.
-         Product: BestQuoteTool — $15.00/month recurring. -->
-    <a class="btn" id="subscribe-btn" href="#">Subscribe — $15/month</a>
+    <!-- STRIPE: the href below is filled in from js/bqt-config.js (STRIPE_LINK_BASE)
+         once the Stripe Payment Link exists. Product: BestQuoteTool — $19.00/month recurring.
+         While the config value is empty the button keeps its current behavior. -->
+    <a class="btn" id="subscribe-btn" href="#">Subscribe — $19/month</a>
     <p class="note">Secure checkout by Stripe.</p>
     <p class="note">We never see your rates or your client data. Your saved quotes stay on your own device — yours until you delete them.</p>
   </div>
@@ -107,10 +114,13 @@ footer{margin:34px 0 0;font-family:var(--mono);font-size:13px;text-align:center;
     <p style="font-size:17px;margin:0">Have something to add? <a href="mailto:frankg1718@gmail.com">Contact us</a> — we like to hear from you. This app is made for the contractor. Make it really yours.</p>
   </section>
 
-  <footer>BestQuoteTool · Estimates are editable templates for reference, not contracts or advice.</footer>
+  <footer>BestQuoteTool · Estimates are editable templates for reference, not contracts or advice.<br><a href="terms.html">Terms of Service</a> · <a href="privacy.html">Privacy Policy</a></footer>
+  <script src="js/bqt-config.js"></script>
   <script>
   // Returning from a completed subscription checkout unlocks unlimited documents on this device.
   if(new URLSearchParams(location.search).get('subscribed')==='1'){try{localStorage.setItem('bqt_subscribed','1')}catch(e){}}
+  // When the Stripe Payment Link is pasted into js/bqt-config.js, point Subscribe at it.
+  if(window.BQT_CONFIG&&window.BQT_CONFIG.STRIPE_LINK_BASE){var sb=document.getElementById('subscribe-btn');if(sb)sb.href=window.BQT_CONFIG.STRIPE_LINK_BASE;}
   </script>
 </div>
 </body>
