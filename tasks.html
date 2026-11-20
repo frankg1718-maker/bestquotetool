@@ -428,7 +428,7 @@ function cCopyManual(text){
 /* ---------- real .docx writer (dependency-free OOXML) ---------- */
 function xesc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 /* docHtml() pre-escapes text (&amp; &lt; etc.); decode back before XML-escaping */
-function _hdec(s){return String(s).replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&amp;/g,'&')}
+function _hdec(s){return String(s).replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&nbsp;/g,' ').replace(/&amp;/g,'&')}
 var _crcT=(()=>{var tb=new Uint32Array(256);for(var n=0;n<256;n++){var c=n;for(var k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);tb[n]=c>>>0}return tb})();
 function _crc32(data){var c=0xFFFFFFFF;for(var i=0;i<data.length;i++)c=_crcT[(c^data[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0}
 function zipStore(files){
@@ -563,8 +563,105 @@ function htmlToDocxBody(html){
   }
   return body;
 }
+/* ---------- edited-document download: article markup -> docHtml subset ----------
+   An edited document is stored as the on-screen <article class="qdoc"> markup
+   (divs and spans). htmlToDocxBody only understands the docHtml() subset
+   (h1/h2/p/table), so article markup used to pour every text node into one
+   giant paragraph — line items, amounts and notes all run together.
+   articleToDocHtml() re-emits the article in that subset, keeping the
+   on-screen order and the user's edited words, so an edited download is
+   organized the same way the document displays in the app. */
+function _aTxt(el){return el?String(el.textContent||'').replace(/\s+/g,' ').trim():''}
+function _aInline(node){
+  var out='';
+  for(var i=0;i<node.childNodes.length;i++){
+    var n=node.childNodes[i];
+    if(n.nodeType===3){out+=esc(n.textContent.replace(/\s+/g,' '));continue;}
+    if(n.nodeType!==1)continue;
+    var tag=n.tagName.toLowerCase();
+    if(tag==='br'){out+='<br>';continue;}
+    if(tag==='img'||tag==='svg')continue;
+    if(n.classList&&n.classList.contains('line')){out+=(/140px/.test(n.getAttribute('style')||'')?'____________':'______________________________');continue;}
+    var inner=_aInline(n);
+    if(tag==='b'||tag==='strong')out+='<b>'+inner+'</b>';
+    else if(tag==='i'||tag==='em')out+='<i>'+inner+'</i>';
+    else if(tag==='small')out+='<small>'+inner+'</small>';
+    else out+=inner;
+  }
+  return out;
+}
+function _aRow(ql){
+  var cell='';
+  var dEl=ql.querySelector('.d'),aEl=ql.querySelector('.a');
+  if(dEl)cell+=esc(_aTxt(dEl));
+  var ss=ql.querySelectorAll('.s');
+  for(var i=0;i<ss.length;i++){var h=_aInline(ss[i]).trim();if(h)cell+='<br><small>'+h+'</small>';}
+  var why=ql.querySelector('.why');
+  if(why){var wt=_aTxt(why);if(wt)cell+='<br><i>'+esc(wt)+'</i>';}
+  return '<tr><td>'+cell+'</td><td align="right">'+esc(aEl?_aTxt(aEl):'')+'</td></tr>';
+}
+function _aGroup(grp){
+  var out='',rows='';
+  var flush=function(){if(rows){out+='<table border="1" cellpadding="6" cellspacing="0">'+rows+'</table>';rows='';}};
+  for(var i=0;i<grp.childNodes.length;i++){
+    var n=grp.childNodes[i];
+    if(n.nodeType!==1)continue;
+    if(n.classList.contains('qgh')){
+      var title=_aTxt(n.querySelector('span')),sub=_aTxt(n.querySelector('b'));
+      out+='<h2>'+esc(sub?(title+' — '+sub):title)+'</h2>';
+    }else if(n.classList.contains('ql')){rows+=_aRow(n);}
+    else{flush();var tx=_aTxt(n);if(tx)out+='<p>'+esc(tx)+'</p>';}
+  }
+  flush();
+  return out;
+}
+function articleToDocHtml(html){
+  if(!html||html.indexOf('qdoc')<0)return html;
+  var art=new DOMParser().parseFromString(html,'text/html').querySelector('article');
+  if(!art)return html;
+  var out='';
+  for(var i=0;i<art.children.length;i++){
+    var el=art.children[i],cls=el.classList;
+    if(cls.contains('qh')){
+      var qno=el.querySelector('.qno'),qco=el.querySelector('.qco'),kind='',no='',rest=[],pi;
+      if(qno){
+        var ps=qno.querySelectorAll('p');
+        if(ps.length)kind=_aTxt(ps[0]);
+        no=_aTxt(qno.querySelector('b'));
+        for(pi=1;pi<ps.length;pi++){var pt=_aTxt(ps[pi]);if(pt)rest.push(esc(pt));}
+      }
+      if(kind)out+='<h1>'+esc(kind)+'</h1>';
+      var line=(no?'<b>'+esc(no)+'</b>':'')+(rest.length?((no?' — ':'')+rest.join('<br>')):'');
+      if(line)out+='<p>'+line+'</p>';
+      if(qco){
+        var cn=_aTxt(qco.querySelector('h2')),cp=_aTxt(qco.querySelector('p'));
+        if(cn||cp)out+='<p>'+esc(cn)+(cp?'<br>'+esc(cp):'')+'</p>';
+      }
+    }else if(cls.contains('qmeta')){
+      var lines=[];
+      for(var mi=0;mi<el.children.length;mi++){var tx=_aTxt(el.children[mi]);if(tx)lines.push(esc(tx));}
+      if(lines.length)out+='<p>'+lines.join('<br>')+'</p>';
+    }else if(cls.contains('qgrp')){out+=_aGroup(el);}
+    else if(cls.contains('qtotal')){
+      var lb=_aTxt(el.querySelector('span')),am=_aTxt(el.querySelector('b'));
+      out+='<h2>'+esc(lb.toUpperCase())+(am?' — '+esc(am):'')+'</h2>';
+    }else if(cls.contains('qdep')){
+      out+='<p>'+esc(_aTxt(el.querySelector('span')))+': '+esc(_aTxt(el.querySelector('b')))+'</p>';
+    }else if(cls.contains('qsign')){
+      var sps=el.querySelectorAll('p');
+      for(var si=0;si<sps.length;si++){var sh=_aInline(sps[si]).trim();if(sh)out+='<p>'+sh+'</p>';}
+    }else if(cls.contains('paidstamp')){out+='<p><b>'+esc(_aTxt(el))+'</b></p>';}
+    else if(el.tagName==='P'){var ph=_aInline(el).trim();if(ph)out+='<p>'+ph+'</p>';}
+    else{
+      var blocks=el.querySelectorAll('p,li,h1,h2,h3'),done=false;
+      for(var bi=0;bi<blocks.length;bi++){var bt=_aTxt(blocks[bi]);if(bt){out+='<p>'+esc(bt)+'</p>';done=true;}}
+      if(!done){var et=_aTxt(el);if(et)out+='<p>'+esc(et)+'</p>';}
+    }
+  }
+  return out||html;
+}
 function buildDocx(bodyHtml){
-  var body=htmlToDocxBody(bodyHtml);
+  var body=htmlToDocxBody(articleToDocHtml(bodyHtml));
   var doc='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
     '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'+
     body+
