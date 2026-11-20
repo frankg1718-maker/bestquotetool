@@ -382,6 +382,20 @@ const unitName=u=>t('unit.'+({'sq ft':'sqft','ln ft':'lnft','hr':'hr','flat':'fl
 const MAT_UNITS=['gallon','quart','each','roll','tube','pack','box','sheet'].map(u=>[u,u]);
 const LOGO='<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="6" y="7" width="30" height="13" rx="3" fill="#F0BE2B" stroke="currentColor" stroke-width="2.5"/><path d="M36 13.5h5a2 2 0 0 1 2 2V24a2 2 0 0 1-2 2H24v6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="20.5" y="32" width="7" height="11" rx="2" fill="currentColor"/></svg>';
 function cLogoHtml(){return CS.company.logo?`<img src="${CS.company.logo}" alt="">`:LOGO}
+/* §2e — a stored edited document is displayed verbatim, header included,
+   so a header captured before the logo was loaded (or with its logo slot
+   emptied while editing) never shows the logo on screen, while the
+   download always embeds the current logo. Sync the displayed header's
+   logo slot to the current logo. No logo loaded -> display untouched. */
+function cSyncDocLogo(el){
+  if(!el||!CS.company.logo)return;
+  const art=el.querySelector('article');if(!art)return;
+  const qco=art.querySelector('.qh .qco');if(!qco)return;
+  let slot=qco.querySelector('.logo');
+  if(!slot){slot=document.createElement('div');slot.className='logo big';slot.setAttribute('style','width:64px;height:64px');qco.insertBefore(slot,qco.firstChild)}
+  const img=slot.querySelector('img');
+  if(!img||img.getAttribute('src')!==CS.company.logo)slot.innerHTML=cLogoHtml();
+}
 function docHtml(title,no,date,meta,groups,extra){
   let h=`<h1>${esc(title)}</h1><p><b>${esc(no)}</b> — ${esc(date)}</p><p>${meta}</p>`;
   groups.forEach(g=>{
@@ -1607,6 +1621,9 @@ function cUpdate(){
   cSyncMs();
   if(CS.invOn&&!cInvEditMode){const idd=document.getElementById('c-invdoc');if(idd){const ih=CS.invEdit||cRenderInvoice();if(idd.innerHTML!==ih)idd.innerHTML=ih}}
   if(CS.recOn&&!cRecEditMode){const rd=document.getElementById('c-rcdoc');if(rd){const rh=CS.recEdit||cRenderReceipt();if(rd.innerHTML!==rh)rd.innerHTML=rh}}
+  if(CS.estOn&&!cEstEditMode)cSyncDocLogo(document.getElementById('c-estimatedoc'));
+  if(CS.invOn&&!cInvEditMode)cSyncDocLogo(document.getElementById('c-invdoc'));
+  if(CS.recOn&&!cRecEditMode)cSyncDocLogo(document.getElementById('c-rcdoc'));
   const sd=document.getElementById('cSavedDocs');
   if(sd){
     const kindName={est:t('c.doc.estimate'),inv:t('c.doc.invoice'),rec:t('c.doc.receipt')};

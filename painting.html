@@ -850,6 +850,20 @@ function quoteData(){
     system:t('coat.'+S.coating)};
 }
 function logoHtml(){return S.company.logo?`<img src="${S.company.logo}" alt="">`:LOGO}
+/* §2e — a stored edited document is displayed verbatim, header included,
+   so a header captured before the logo was loaded (or with its logo slot
+   emptied while editing) never shows the logo on screen, while the
+   download always embeds the current logo. Sync the displayed header's
+   logo slot to the current logo. No logo loaded -> display untouched. */
+function syncDocLogo(box){
+  if(!box||!S.company.logo)return;
+  const art=box.querySelector('article');if(!art)return;
+  const qco=art.querySelector('.qh .qco');if(!qco)return;
+  let slot=qco.querySelector('.logo');
+  if(!slot){slot=document.createElement('div');slot.className='logo big';slot.setAttribute('style','width:64px;height:64px');qco.insertBefore(slot,qco.firstChild)}
+  const img=slot.querySelector('img');
+  if(!img||img.getAttribute('src')!==S.company.logo)slot.innerHTML=logoHtml();
+}
 function renderQuote(){
   const q=quoteData(), c=S.company;
   const contact=[c.phone,c.email,c.license].filter(Boolean).map(esc).join(' · ');
@@ -1615,6 +1629,9 @@ function update(){
   if(S.invoiceOn&&!iEditMode){const ih=S.invEdit||renderInvoice();const ie=$('#invdoc');if(ie&&ie.innerHTML!==ih)ie.innerHTML=ih}
   syncPay();
   if(S.recOn&&!rEditMode){const rh=S.recEdit||renderReceipt();const re=$('#recdoc');if(re&&re.innerHTML!==rh)re.innerHTML=rh}
+  if(S.quoteOn&&!qEditMode)syncDocLogo($('#qdoc'));
+  if(S.invoiceOn&&!iEditMode)syncDocLogo($('#invdoc'));
+  if(S.recOn&&!rEditMode)syncDocLogo($('#recdoc'));
   save();
 }
 
