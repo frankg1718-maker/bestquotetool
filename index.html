@@ -56,6 +56,34 @@ section.why ul{margin:0;padding-left:20px;font-size:16px;line-height:1.65}
 .subscribe p{margin:0 0 20px;font-size:16px}
 .subscribe .btn{box-shadow:3px 3px 0 rgba(246,241,230,.85)}
 footer{margin:34px 0 0;font-family:var(--mono);font-size:13px;text-align:center;opacity:.75}
+/* Embellish pass — Nov 22 2026 (visual only; copy and structure untouched).
+   Per the approved embellished home design: real tape, crisper shadows,
+   icon chips on the three doors, check chips, ruler edge on wide screens. */
+::selection{background:var(--tape)}
+.btn{transition:transform .08s ease,box-shadow .08s ease}
+.btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--ink)}
+.btn:focus-visible,a:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+h1{letter-spacing:-.01em}
+.sub{line-height:1.45}
+.kicker{background:linear-gradient(100deg,#f6cd45,#f2c230 55%,#eebd27);transform:rotate(-1.3deg);clip-path:polygon(1% 6%,99% 0%,100% 88%,97% 100%,2% 97%,0% 30%)}
+.price-strip{background:var(--card);border:2px solid var(--ink);box-shadow:5px 5px 0 var(--ink);padding:14px 18px;margin:24px 0 0;max-width:660px}
+.price-strip .price-line{margin:0}
+.price-strip .price-line + .price-line{margin-top:8px}
+.tool{position:relative;transition:transform .1s ease,box-shadow .1s ease}
+.tool:hover{transform:translate(-2px,-2px);box-shadow:7px 7px 0 var(--ink)}
+.tool:first-child::after{content:"";position:absolute;top:-13px;right:20px;width:88px;height:25px;background:linear-gradient(100deg,rgba(246,205,69,.92),rgba(242,194,48,.85));transform:rotate(38deg);box-shadow:0 1px 3px rgba(29,26,20,.25)}
+.tic{display:inline-flex;align-items:center;justify-content:center;width:46px;height:46px;background:var(--tape);border:2px solid var(--ink);box-shadow:3px 3px 0 var(--ink);margin:0 0 14px}
+.tic svg{width:25px;height:25px;stroke:var(--ink);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+section.why ul{list-style:none;padding-left:0}
+section.why li{position:relative;padding-left:38px;margin:8px 0}
+section.why li::before{content:"\2713";position:absolute;left:0;top:1px;width:24px;height:24px;background:var(--tape);border:2px solid var(--ink);font-weight:700;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center}
+.subscribe{position:relative}
+.subscribe .btn{margin:4px 6px}
+footer{position:relative}
+@media (min-width:1150px){
+  body::before{content:"";position:fixed;left:16px;top:0;bottom:0;width:30px;opacity:.4;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='120'%3E%3Cpath d='M0 1h18M0 31h11M0 61h18M0 91h11' stroke='%231d1a14' stroke-width='1.6'/%3E%3C/svg%3E");background-repeat:repeat-y;border-left:2px solid rgba(29,26,20,.45)}
+}
+
 .note{font-size:13px;font-family:var(--mono);margin-top:12px;opacity:.8}
 </style>
 </head>
@@ -65,22 +93,27 @@ footer{margin:34px 0 0;font-family:var(--mono);font-size:13px;text-align:center;
     <span class="kicker">For painting &amp; carpentry contractors</span>
     <h1>BestQuoteTool</h1>
     <p class="sub">Three working estimators built from 23+ years in the trade. Measure the job, price it with your own rates, and download a clean estimate your client can sign — right from your phone.</p>
+    <div class="price-strip">
     <p class="price-line"><strong>$19/month</strong> &nbsp;Unlimited documents &nbsp;·&nbsp; First 5 estimates free &nbsp;·&nbsp; English &amp; Spanish</p>
     <p class="price-line">One subscription covers web, desktop, and the Android app.</p>
+    </div>
   </header>
 
   <div class="tools">
     <div class="tool">
+      <span class="tic" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="13" height="5" rx="1"/><path d="M16 5.5h3.5v4H10v2.5"/><rect x="8.2" y="12" width="3.6" height="9" rx="1"/></svg></span>
       <h2>Painting Estimator</h2>
       <p>Walls, ceilings, trim, doors, windows and radiators — priced by the square foot and the piece, with prep and coats built in.</p>
       <a class="btn" href="painting.html">Open the Painting Estimator</a>
     </div>
     <div class="tool">
+      <span class="tic" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="2.6" y="9" width="18.8" height="6.4" rx="1" transform="rotate(-45 12 12.2)"/><path d="M8.6 12.6l1.8 1.8M12 9.2l1.8 1.8M15.4 5.8l1.8 1.8"/></svg></span>
       <h2>Carpentry Estimator</h2>
       <p>Trim packages, doors, built-ins and the small tasks that ride along on every job — priced the way a carpenter actually charges.</p>
       <a class="btn" href="carpentry.html">Open the Carpentry Estimator</a>
     </div>
     <div class="tool">
+      <span class="tic" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="4.5" width="14" height="16.5" rx="2"/><path d="M9.5 4.5v-1h5v1"/><path d="M8.8 11.2l1.7 1.7 3.2-3.4"/><path d="M8.8 17.2l1.7 1.7 3.2-3.4"/></svg></span>
       <h2>Task &amp; Other Trades</h2>
       <p>Open to every other trade — cleaning, plumbing, electrical, drywall, tree work and more. Each task carries its own tabs: description, measurements, materials &amp; supplies, schedule &amp; frequency, checklist, options &amp; add-ons, photos, and notes &amp; terms. Every title, description and measurement is editable.</p>
       <a class="btn" href="tasks.html">Open the Task &amp; Other Trades Estimator</a>
