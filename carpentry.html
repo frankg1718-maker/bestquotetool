@@ -1468,12 +1468,13 @@ function cOpenShare(kind){
   o.querySelector('#shX').addEventListener('click',cCloseShare);
   o.querySelector('#shCancel').addEventListener('click',cCloseShare);
   o.querySelector('#shDl').addEventListener('click',()=>{downloadDoc(info.name,info.html);cCloseShare()});
+  let shFile=null;
+  try{shFile=new File([buildDocx(info.html)],info.name,{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'})}catch(e){shFile=null}
   o.querySelector('#shSend').addEventListener('click',async()=>{
     const msg=cFillShareMsg(kind);
     let shared=false,aborted=false;
     try{
-      const file=new File([buildDocx(info.html)],info.name,{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
-      if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],text:msg});shared=true}
+      if(shFile&&navigator.share){await navigator.share({files:[shFile],text:msg});shared=true}
     }catch(e){shared=false;if(e&&e.name==='AbortError')aborted=true}
     if(shared){cCloseShare()}
     else if(!aborted){
