@@ -212,7 +212,7 @@
     var h = hashStr(raw + "|" + kind), skey = "bqt_snap_" + tool + "_" + kind, last = null;
     try { last = sessionStorage.getItem(skey); } catch (e) {}
     if (last === h) return Promise.resolve(false);
-    var title = (tool === "carpentry" ? "Carpentry" : "Painting") + " " +
+    var title = ({painting:"Painting",carpentry:"Carpentry",tasks:"Task & Other Trades"}[tool]||"Painting") + " " +
       (KIND_LABEL[kind] || "Document") + " — " +
       new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
     return client.from("documents")
