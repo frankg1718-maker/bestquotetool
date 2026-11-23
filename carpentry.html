@@ -974,7 +974,7 @@ function cLoad(){try{
   if(d.estOn)CS.estOn=true; if(d.invOn)CS.invOn=true; if(d.recOn)CS.recOn=true;
   if(d.qdate)CS.qdate=d.qdate; if(d.inDate)CS.inDate=d.inDate; if(d.rDate)CS.rDate=d.rDate;
   if(d.lang==='en'||d.lang==='es')CS.lang=d.lang;
-  if(typeof d.shareMsg==='string')CS.shareMsg=d.shareMsg;
+  if(typeof d.shareMsg==='string')CS.shareMsg=d.shareMsg.split('attafhhttyched').join('attached');
   if(typeof d.estEdit==='string')CS.estEdit=d.estEdit;
   if(typeof d.recEdit==='string')CS.recEdit=d.recEdit;
   if(typeof d.invEdit==='string')CS.invEdit=d.invEdit;
@@ -1470,16 +1470,17 @@ function cOpenShare(kind){
   o.querySelector('#shDl').addEventListener('click',()=>{downloadDoc(info.name,info.html);cCloseShare()});
   o.querySelector('#shSend').addEventListener('click',async()=>{
     const msg=cFillShareMsg(kind);
-    let shared=false;
+    let shared=false,aborted=false;
     try{
       const file=new File([buildDocx(info.html)],info.name,{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
       if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],text:msg});shared=true}
-    }catch(e){shared=false}
-    if(!shared){
+    }catch(e){shared=false;if(e&&e.name==='AbortError')aborted=true}
+    if(shared){cCloseShare()}
+    else if(!aborted){
       downloadDoc(info.name,info.html);
       cCopyText(msg,()=>{},()=>{});
       document.getElementById('shNote').textContent=t('c.sh.sent');
-    }else{cCloseShare()}
+    }
   });
 }
 function cSetEditBtn(act,on){document.querySelectorAll('[data-cact="'+act+'"]').forEach(b=>{b.textContent=on?t('c.ed.done'):t('c.ed.edit')})}
@@ -2413,8 +2414,10 @@ body.has-nav .bqt-pill{bottom:86px}
 /* One loud generate: Quote/Estimate leads, Invoice/Receipt quiet (Nov 23) */
 [data-act="invoice"].wide,[data-act="receipt"].wide,[data-cact="invoice"].wide,[data-cact="receipt"].wide{background:transparent;color:var(--accent);border:2px solid var(--accent);box-shadow:none}
 [data-act="invoice"].wide:hover,[data-act="receipt"].wide:hover,[data-cact="invoice"].wide:hover,[data-cact="receipt"].wide:hover{background:color-mix(in srgb,var(--accent) 12%,transparent);filter:none}
-/* Edit / Back to original run quiet everywhere (Nov 23) */
-[data-act="editQuote"],[data-act="editInvoice"],[data-act="editReceipt"],[data-act="resetQuoteEdit"],[data-act="resetInvoiceEdit"],[data-act="resetReceiptEdit"],[data-cact="editEst"],[data-cact="editInv"],[data-cact="editRec"],[data-cact="resetEstEdit"],[data-cact="resetInvEdit"],[data-cact="resetRecEdit"]{font-size:13px;padding:7px 11px;color:var(--muted)}
+/* Back to original runs quiet; the Edit button carries the gold so it is
+   easy to find in every generated document (Franklin, Nov 23) */
+[data-act="resetQuoteEdit"],[data-act="resetInvoiceEdit"],[data-act="resetReceiptEdit"],[data-cact="resetEstEdit"],[data-cact="resetInvEdit"],[data-cact="resetRecEdit"]{font-size:13px;padding:7px 11px;color:var(--muted)}
+[data-act="editQuote"],[data-act="editInvoice"],[data-act="editReceipt"],[data-cact="editEst"],[data-cact="editInv"],[data-cact="editRec"]{font-size:13px;padding:8px 13px;background:var(--tape);border-color:var(--tape);color:#1d1a14;font-weight:700}
 
 </style>
 <script>

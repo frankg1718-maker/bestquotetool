@@ -504,7 +504,7 @@ function load(){try{
   if(+d.inNo>0)S.inNo=+d.inNo;
   if(+d.recNo>0)S.recNo=+d.recNo;
   if(Array.isArray(d.payments))S.payments=d.payments;
-  if(typeof d.shareMsg==='string')S.shareMsg=d.shareMsg;
+  if(typeof d.shareMsg==='string')S.shareMsg=d.shareMsg.split('attafhhttyched').join('attached');
   if(typeof d.quoteEdit==='string')S.quoteEdit=d.quoteEdit;
   if(typeof d.recEdit==='string')S.recEdit=d.recEdit;
   if(typeof d.invEdit==='string')S.invEdit=d.invEdit;
@@ -1512,18 +1512,17 @@ function openShare(kind){
   ta.addEventListener('input',paintPrev);paintPrev();
   o.querySelector('#shCancel').addEventListener('click',closeShare);
   o.querySelector('#shDl').addEventListener('click',()=>{const k=shareKind;closeShare();ACT[k==='quote'?'downloadQuote':k==='invoice'?'downloadInvoice':'downloadReceipt']()});
-  o.querySelector('#shSend').addEventListener('click',()=>{
+  o.querySelector('#shSend').addEventListener('click',async()=>{
     const text=fillShare(ta.value,info);
     S.shareMsg=ta.value;save();
-    const file=new File([buildDocx(info.html)],info.name,{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
-    if(navigator.canShare&&navigator.canShare({files:[file]})){
-      navigator.share({files:[file],text:text,title:info.label}).then(()=>closeShare()).catch(()=>{});
-    }else{
-      downloadDoc(info.name,info.html);
-      if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).catch(()=>{})}
-      const note=o.querySelector('#shNote');
-      if(note)note.textContent=t('sh.fallback');
-    }
+    const note=o.querySelector('#shNote');
+    const fallback=()=>{downloadDoc(info.name,info.html);if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).catch(()=>{})}if(note)note.textContent=t('sh.fallback')};
+    let shared=false,aborted=false;
+    try{
+      const file=new File([buildDocx(info.html)],info.name,{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+      if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],text:text,title:info.label});shared=true}
+    }catch(e){if(e&&e.name==='AbortError')aborted=true}
+    if(shared)closeShare();else if(!aborted)fallback();
   });
 }
 
@@ -2476,8 +2475,10 @@ body.has-nav .bqt-pill{bottom:86px}
 /* One loud generate: Quote/Estimate leads, Invoice/Receipt quiet (Nov 23) */
 [data-act="invoice"].wide,[data-act="receipt"].wide,[data-cact="invoice"].wide,[data-cact="receipt"].wide{background:transparent;color:var(--accent);border:2px solid var(--accent);box-shadow:none}
 [data-act="invoice"].wide:hover,[data-act="receipt"].wide:hover,[data-cact="invoice"].wide:hover,[data-cact="receipt"].wide:hover{background:color-mix(in srgb,var(--accent) 12%,transparent);filter:none}
-/* Edit / Back to original run quiet everywhere (Nov 23) */
-[data-act="editQuote"],[data-act="editInvoice"],[data-act="editReceipt"],[data-act="resetQuoteEdit"],[data-act="resetInvoiceEdit"],[data-act="resetReceiptEdit"],[data-cact="editEst"],[data-cact="editInv"],[data-cact="editRec"],[data-cact="resetEstEdit"],[data-cact="resetInvEdit"],[data-cact="resetRecEdit"]{font-size:13px;padding:7px 11px;color:var(--muted)}
+/* Back to original runs quiet; the Edit button carries the gold so it is
+   easy to find in every generated document (Franklin, Nov 23) */
+[data-act="resetQuoteEdit"],[data-act="resetInvoiceEdit"],[data-act="resetReceiptEdit"],[data-cact="resetEstEdit"],[data-cact="resetInvEdit"],[data-cact="resetRecEdit"]{font-size:13px;padding:7px 11px;color:var(--muted)}
+[data-act="editQuote"],[data-act="editInvoice"],[data-act="editReceipt"],[data-cact="editEst"],[data-cact="editInv"],[data-cact="editRec"]{font-size:13px;padding:8px 13px;background:var(--tape);border-color:var(--tape);color:#1d1a14;font-weight:700}
 
 </style>
 <script>
