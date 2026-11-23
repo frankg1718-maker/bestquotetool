@@ -473,6 +473,10 @@ function _wRun(text,fmt){
 function _wPara(p){
   var ppr='';
   if(p.style)ppr+='<w:pStyle w:val="'+p.style+'"/>';
+  if(p.cell)ppr+='<w:spacing w:line="264" w:lineRule="auto"/>';
+  else if(p.style==='Heading1')ppr+='<w:spacing w:after="240" w:line="276" w:lineRule="auto"/>';
+  else if(p.style==='Heading2')ppr+='<w:spacing w:before="300" w:after="120" w:line="276" w:lineRule="auto"/>';
+  else ppr+='<w:spacing w:after="120" w:line="276" w:lineRule="auto"/>';
   if(p.align)ppr+='<w:jc w:val="'+p.align+'"/>';
   var runs=p.runs.length?p.runs:[{t:''}];
   var inner='';
@@ -498,14 +502,14 @@ function _wTable(rows){
     '<w:right w:val="single" w:sz="6" w:space="0" w:color="999999"/>'+
     '<w:insideH w:val="single" w:sz="6" w:space="0" w:color="999999"/>'+
     '<w:insideV w:val="single" w:sz="6" w:space="0" w:color="999999"/></w:tblBorders>';
-  var t='<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/>'+b+'</w:tblPr>'+grid;
+  var t='<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/>'+b+'<w:tblCellMar><w:top w:w="60" w:type="dxa"/><w:left w:w="110" w:type="dxa"/><w:bottom w:w="60" w:type="dxa"/><w:right w:w="110" w:type="dxa"/></w:tblCellMar></w:tblPr>'+grid;
   for(i=0;i<rows.length;i++){
     t+='<w:tr>';
     for(ci=0;ci<rows[i].length;ci++){
       var cell=rows[i][ci];
       t+='<w:tc><w:tcPr><w:tcW w:w="'+cw(ci)+'" w:type="dxa"/></w:tcPr>';
       var ps=cell.paras.length?cell.paras:[{style:null,align:cell.align,runs:[{t:''}]}];
-      for(var pi=0;pi<ps.length;pi++){if(!ps[pi].align&&cell.align)ps[pi].align=cell.align;t+=_wPara(ps[pi]);}
+      for(var pi=0;pi<ps.length;pi++){if(!ps[pi].align&&cell.align)ps[pi].align=cell.align;ps[pi].cell=true;t+=_wPara(ps[pi]);}
       t+='</w:tc>';
     }
     t+='</w:tr>';
