@@ -1765,8 +1765,8 @@ cLoad();healLogo();cRender();cApplyI18n();cUpdate();
 (function(){
 "use strict";
 var FREE_LIMIT=5;
-var TOOL=(location.pathname.indexOf('carpentry')>=0)?'carpentry':'painting';
-var STORE_KEY=(TOOL==='carpentry')?'carpentry-estimator-v1':'painting-estimator-v1';
+var TOOL=(location.pathname.indexOf('tasks')>=0)?'tasks':(location.pathname.indexOf('carpentry')>=0)?'carpentry':'painting';
+var STORE_KEY=(TOOL==='painting')?'painting-estimator-v1':'carpentry-estimator-v1';
 var TRUST='We never see your rates or your client data. Your saved quotes stay on your own device — yours until you delete them.';
 function g(k){try{return localStorage.getItem(k)}catch(e){return null}}
 function s(k,v){try{localStorage.setItem(k,v)}catch(e){}}
@@ -2428,11 +2428,11 @@ body.has-nav .bqt-pill{bottom:86px}
   function g(k){try{return localStorage.getItem(k)}catch(e){return null}}
   function isSub(){return g('bqt_subscribed')==='1'||g('bqt_profile_subscribed')==='1'}
   function esc(x){return String(x==null?'':x).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
-  function storeKey(){return (location.pathname.indexOf('carpentry')>=0)?'carpentry-estimator-v1':'painting-estimator-v1'}
+  function storeKey(){return (location.pathname.indexOf('painting')>=0)?'painting-estimator-v1':'carpentry-estimator-v1'}
   function deviceState(){try{return JSON.parse(g(storeKey())||'null')}catch(e){return null}}
   function lang(){var st=deviceState();if(st&&st.lang)return st.lang;return (navigator.language||'en').slice(0,2)==='es'?'es':'en'}
-  var L={en:{jobs:'Saved jobs',clients:'Clients',close:'Close',nojobs:'No saved jobs yet.',noclients:'No saved clients yet — clients from your saved jobs will appear here.',current:'Current job on this device',note:'Saved jobs live here with Cloud Saving (Plus). It turns on at launch — until then, documents stay on this device, exactly as they do today.',restore:'Restore',home:'Home',account:'Account',untitled:'Untitled job'},
-         es:{jobs:'Trabajos guardados',clients:'Clientes',close:'Cerrar',nojobs:'Aún no hay trabajos guardados.',noclients:'Aún no hay clientes guardados — los clientes de sus trabajos guardados aparecerán aquí.',current:'Trabajo actual en este dispositivo',note:'Los trabajos guardados viven aquí con Cloud Saving (Plus). Se activa en el lanzamiento — hasta entonces, los documentos permanecen en este dispositivo, exactamente como hoy.',restore:'Restaurar',home:'Inicio',account:'Cuenta',untitled:'Trabajo sin título'}};
+  var L={en:{jobs:'Saved jobs',clients:'Clients',close:'Close',nojobs:'No saved jobs yet.',noclients:'No saved clients yet — clients from your saved jobs will appear here.',current:'Current job on this device',note:'Saved jobs live here with Cloud Saving (Plus). It turns on at launch — until then, documents stay on this device, exactly as they do today.',restore:'Restore',home:'Home',account:'Account',untitled:'Untitled job',fp:'Painting jobs',fc:'Carpentry jobs',ft:'Task & Other Trades jobs',back:'\u2190 Folders',open:'Open',job1:'job',jobn:'jobs'},
+         es:{jobs:'Trabajos guardados',clients:'Clientes',close:'Cerrar',nojobs:'Aún no hay trabajos guardados.',noclients:'Aún no hay clientes guardados — los clientes de sus trabajos guardados aparecerán aquí.',current:'Trabajo actual en este dispositivo',note:'Los trabajos guardados viven aquí con Cloud Saving (Plus). Se activa en el lanzamiento — hasta entonces, los documentos permanecen en este dispositivo, exactamente como hoy.',restore:'Restaurar',home:'Inicio',account:'Cuenta',untitled:'Trabajo sin título',fp:'Trabajos de pintura',fc:'Trabajos de carpintería',ft:'Tareas y otros oficios',back:'\u2190 Carpetas',open:'Abrir',job1:'trabajo',jobn:'trabajos'}};
   function T(k){var d=L[lang()]||L.en;return d[k]||L.en[k]||k}
   /* ---- Send to customer ---- */
   var DOCIDS={quote:'qdoc',invoice:'invdoc',receipt:'recdoc',est:'c-estimatedoc',inv:'c-invdoc',rec:'c-rcdoc'};
@@ -2469,23 +2469,42 @@ body.has-nav .bqt-pill{bottom:86px}
     var c=window.BQTCloud;
     if(c&&c.configured&&c.listDocuments){
       var o=openCard('<h3>'+esc(T('jobs'))+'</h3><p class="es">…</p>');
-      var tool=(location.pathname.indexOf('carpentry')>=0)?'carpentry':'painting';
-      c.listDocuments(tool).then(function(rows){
-        var h='<h3>'+esc(T('jobs'))+'</h3>';
-        if(!rows||!rows.length){h+='<p class="es">'+esc(T('nojobs'))+'</p>'}
-        (rows||[]).forEach(function(r){
+      var FOLDERS=[['painting','fp'],['carpentry','fc'],['tasks','ft']];
+      var PAGE={painting:'painting.html',carpentry:'carpentry.html',tasks:'tasks.html'};
+      var FKEY={painting:'painting-estimator-v1',carpentry:'carpentry-estimator-v1',tasks:'carpentry-estimator-v1'};
+      var cache={};
+      var wireClose=function(){var b=o.querySelector('#bqtNavClose');if(b)b.addEventListener('click',closeCard)};
+      var jobList=function(tool){
+        var rows=cache[tool]||[];
+        var h='<h3>'+esc(T(tool==='painting'?'fp':tool==='carpentry'?'fc':'ft'))+'</h3>';
+        if(!rows.length){h+='<p class="es">'+esc(T('nojobs'))+'</p>'}
+        rows.forEach(function(r){
           var d=new Date(r.updated_at||r.created_at);
-          h+='<div class="bqt-navrow"><div>'+esc(r.title||'Document')+'<br><small>'+esc(d.toLocaleDateString())+'</small></div><button type="button" data-restore="'+esc(r.id)+'">'+esc(T('restore'))+'</button></div>';
+          h+='<div class="bqt-navrow"><div>'+esc(r.title||'Document')+'<br><small>'+esc(d.toLocaleDateString())+'</small></div><button type="button" data-restore="'+esc(r.id)+'" data-tool="'+tool+'">'+esc(T('restore'))+'</button></div>';
         });
+        h+='<button type="button" class="bqt-x" id="bqtFoldersBack">'+esc(T('back'))+'</button>';
         o.querySelector('.bqt-card').innerHTML=h+'<button type="button" class="bqt-x" id="bqtNavClose">'+esc(T('close'))+'</button>';
-        o.querySelector('#bqtNavClose').addEventListener('click',closeCard);
+        wireClose();
+        o.querySelector('#bqtFoldersBack').addEventListener('click',folderList);
         o.querySelectorAll('[data-restore]').forEach(function(b){b.addEventListener('click',function(){
-          b.disabled=true;c.fetchDocument(b.getAttribute('data-restore')).then(function(row){
-            try{localStorage.setItem(storeKey(),JSON.stringify(row.doc))}catch(e){}
-            location.reload();
+          b.disabled=true;var t2=b.getAttribute('data-tool');
+          c.fetchDocument(b.getAttribute('data-restore')).then(function(row){
+            try{localStorage.setItem(FKEY[t2],JSON.stringify(row.doc))}catch(e){}
+            if(t2===TOOL){location.reload()}else{location.href=PAGE[t2]}
           }).catch(function(){b.disabled=false});
         })});
-      }).catch(function(){o.querySelector('.bqt-card').innerHTML='<h3>'+esc(T('jobs'))+'</h3><p class="es">'+esc(T('nojobs'))+'</p><button type="button" class="bqt-x" id="bqtNavClose">'+esc(T('close'))+'</button>';o.querySelector('#bqtNavClose').addEventListener('click',closeCard)});
+      };
+      var folderList=function(){
+        var h='<h3>'+esc(T('jobs'))+'</h3>';
+        FOLDERS.forEach(function(f){
+          var n=(cache[f[0]]||[]).length;
+          h+='<div class="bqt-navrow"><div>'+esc(T(f[1]))+'<br><small>'+n+' '+(n===1?esc(T('job1')):esc(T('jobn')))+'</small></div><button type="button" data-folder="'+f[0]+'">'+esc(T('open'))+'</button></div>';
+        });
+        o.querySelector('.bqt-card').innerHTML=h+'<button type="button" class="bqt-x" id="bqtNavClose">'+esc(T('close'))+'</button>';
+        wireClose();
+        o.querySelectorAll('[data-folder]').forEach(function(b){b.addEventListener('click',function(){jobList(b.getAttribute('data-folder'))})});
+      };
+      Promise.all(FOLDERS.map(function(f){return c.listDocuments(f[0]).then(function(rows){cache[f[0]]=rows||[]}).catch(function(){cache[f[0]]=[]})})).then(folderList).catch(folderList);
       return;
     }
     var row=deviceRow();
